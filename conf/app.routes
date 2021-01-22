@@ -5,3 +5,7 @@
 GET        /hello-world             uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.HelloWorldController.helloWorld
 GET        /language/:lang          uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.LanguageSwitchController.switchToLanguage(lang: String)
 GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)
+
+
+# publish
+POST      /publish/api              uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
