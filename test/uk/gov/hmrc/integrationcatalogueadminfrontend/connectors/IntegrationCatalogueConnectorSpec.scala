@@ -36,7 +36,7 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
   private val mockAppConfig = mock[AppConfig]
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
   private implicit val hc: HeaderCarrier = HeaderCarrier()
-  val outboundUrl = "http://localhost:11113/integration-catalogue/publish"
+  val outboundUrl = "/integration-catalogue/publish"
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -86,7 +86,7 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
      val exception=  intercept[RuntimeException]{
         Await.result(connector.publish(request), 500 millis)
       }
-      exception.getMessage should be("Unexpected response from http://localhost:11113/integration-catalogue: some error")
+      exception.getMessage should be("Unexpected response from /integration-catalogue: some error")
 
       verify(mockHttpClient).POST(eqTo(outboundUrl), eqTo(request),
         any[Seq[(String, String)]])(any[Writes[PublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])

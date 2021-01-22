@@ -42,8 +42,7 @@ class PublishController @Inject()(
 
 
     def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = Action.async(playBodyParsers.multipartFormData) { implicit request =>
-      logger.error(request.headers.get("Content-Type").getOrElse("NOPE"))
-      println(request.headers.get("Content-Type").getOrElse("NOPE"))
+
       request.body.file("selectedFile").map { selectedFile =>
 
         val fileContents = Source.fromFile(selectedFile.ref.path.toFile).getLines.mkString("\r\n")

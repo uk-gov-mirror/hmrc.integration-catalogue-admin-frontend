@@ -32,7 +32,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishR
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
                                                     (implicit ec: ExecutionContext) extends Logging {
 
-  private lazy val externalServiceUri = "http://localhost:11113/integration-catalogue"
+  private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
   def publish(publishRequest: PublishRequest)(implicit hc: HeaderCarrier): Future[PublishResult] = {
     http.POST[PublishRequest, PublishResult](s"$externalServiceUri/publish", publishRequest)

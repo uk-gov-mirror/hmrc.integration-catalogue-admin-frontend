@@ -29,4 +29,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val cy: String            = "cy"
   val defaultLanguage: Lang = Lang(en)
 
+  val integrationCatalogueUrl = servicesConfig.baseUrl("integration-catalogue")
+
 }
