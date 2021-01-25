@@ -1,0 +1,209 @@
+openapi: 3.0.0
+servers:
+# TODO: Not sure these URL are correct.
+  - description: MDTP - QA
+    url: https://admin.qa.tax.service.gov.uk/integration-catalogue-admin
+  - description: MDTP - Prod
+    url: https://www.example.com/integration-catalogue-admin
+  - description: MDTP - Jenkins CURL Internal URL
+    url: https://integration-catalogue-admin-frontend.protected.mdtp
+info:
+  version: '0.1'
+  title: Integration Catalogue Keeper API
+  description:
+    This API lets you create, update and delete APIs defined in 'get data for your service'.
+
+paths:
+  /services/apis/publish:
+    post:
+      tags:
+        - Publishing
+      security:
+        - ApiKeyAuth: []
+      description: 
+        Create an API with the POSTed OAS specification.
+        The {api-id} must not be specified in  OAS file
+      parameters:
+        - in: header
+          name: platform
+          description: Must be specified in either this header or the OAS file
+          required: false
+          schema:
+            type: string
+            enum:
+              - IF
+              - API Platform
+              - DES
+            example: JSON
+      requestBody:
+        description: The body of the OAS file
+        required: true
+        content:
+          application/oas3: 
+            schema:
+              type: string
+              example: |
+                openapi: 3.0.0
+                info:
+                  version: '0.1'
+                  title: My new API
+                  ...
+      responses:
+        '201':
+          description: 
+            Created from the OAS file
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Api'
+        '400':
+          description:
+            Failed create upsert an API
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Errors'
+    put:
+      tags:
+        - Publishing
+      security:
+        - ApiKeyAuth: []
+      description: 
+        Creates or updated an API with the POSTed OAS specification.
+      parameters:
+        - in: header
+          name: api-id
+          description: Must be specified in either this header or the OAS file
+          required: false
+          schema:
+            $ref: '#/components/schemas/ApiId'
+      requestBody:
+        description: The body of the OAS file
+        required: true
+        content:
+          application/oas3: 
+            # TODO: a new content type for each format? 
+            # TODO: Do we want to separate type for YAML and JSON?
+            schema: 
+              type: string
+              # format: binary
+              example: |
+                openapi: 3.0.0
+                info:
+                  version: '0.1'
+                  title: My new API
+                  ...
+      responses:
+        '200':
+          description: 
+            Updated from the OAS file
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Api'
+        '400':
+          description:
+            Failed create upsert an API
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Errors'
+  /services/apis:
+    get:
+      tags:
+        - Publishing
+      responses:
+        "200":
+          description: "Yeah"
+          content:
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: object
+                  $ref: '#/components/schemas/Api'
+  /services/apis/{api-id}:
+    get:
+      tags:
+        - Publishing
+      parameters:
+        - in: path
+          required: true
+          name: api-id
+          schema:
+            $ref: '#/components/schemas/ApiId'
+      responses:
+        "200":
+          description: "Yeah"
+          content:
+            application/json:
+              schema: 
+                type: object
+                $ref: '#/components/schemas/Api'
+    delete:
+      tags:
+        - Publishing
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          required: true
+          name: api-id
+          schema: 
+            $ref: '#/components/schemas/ApiId'
+      responses:
+        "204": 
+          description: The resource was deleted successfully
+
+components:
+  # From: https://swagger.io/docs/specification/2-0/authentication/
+  securitySchemes:
+    ApiKeyAuth: # TODO Is this what we want auth to look like?
+      type: apiKey
+      in: header
+      name: X-API-Key # TODO Good header name?
+  schemas:
+    Api:
+      type: object
+      properties:
+        api-id:
+          type: string
+          format: uuid
+          example: 2e9772e9-3c6a-4f1b-a9a3-0b205cbca4fb
+        name:
+          type: string
+        platform:
+          type: string
+          example: IF
+    Errors:
+      type: object
+      properties:
+        code: 
+          type: string
+          example: "INVALID_OAS_FILE"
+        message:
+          type: string
+          example: "Unable to parse invalid OAS file"
+        errors:
+          type: array
+          items:
+            type: object
+            $ref: '#/components/schemas/Error'
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+          example: 
+            - "Unable to parse OAS line 50"
+    ApiId:
+      type: string
+      format: uuid
+      example: 2e9772e9-3c6a-4f1b-a9a3-0b205cbca4fb
+
