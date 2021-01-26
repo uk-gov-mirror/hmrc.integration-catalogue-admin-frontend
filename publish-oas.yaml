@@ -21,11 +21,10 @@ paths:
       security:
         - ApiKeyAuth: []
       description: 
-        Create an API with the POSTed OAS specification.
-        The {api-id} must not be specified in  OAS file
+        Create or updates an API with the POSTed OAS specification.
       parameters:
         - in: header
-          name: platform
+          name: x-platform
           description: Must be specified in either this header or the OAS file
           required: false
           schema:
@@ -35,6 +34,13 @@ paths:
               - API Platform
               - DES
             example: JSON
+        - in: header
+          name: x-publisher-reference
+          description: Must be specified in this header or in the OAS file's 'publisher-reference'.
+          required: false
+          schema:
+            type: string
+            example: 1234
       requestBody:
         description: The body of the OAS file
         required: true
@@ -57,45 +63,6 @@ paths:
               schema:
                 type: object
                 $ref: '#/components/schemas/Api'
-        '400':
-          description:
-            Failed create upsert an API
-          content:
-            application/json:
-              schema:
-                type: object
-                $ref: '#/components/schemas/Errors'
-    put:
-      tags:
-        - Publishing
-      security:
-        - ApiKeyAuth: []
-      description: 
-        Creates or updated an API with the POSTed OAS specification.
-      parameters:
-        - in: header
-          name: api-id
-          description: Must be specified in either this header or the OAS file
-          required: false
-          schema:
-            $ref: '#/components/schemas/ApiId'
-      requestBody:
-        description: The body of the OAS file
-        required: true
-        content:
-          application/oas3: 
-            # TODO: a new content type for each format? 
-            # TODO: Do we want to separate type for YAML and JSON?
-            schema: 
-              type: string
-              # format: binary
-              example: |
-                openapi: 3.0.0
-                info:
-                  version: '0.1'
-                  title: My new API
-                  ...
-      responses:
         '200':
           description: 
             Updated from the OAS file
@@ -174,6 +141,9 @@ components:
           type: string
           format: uuid
           example: 2e9772e9-3c6a-4f1b-a9a3-0b205cbca4fb
+        publisher-reference :
+          type: string
+          example: 1234
         name:
           type: string
         platform:
