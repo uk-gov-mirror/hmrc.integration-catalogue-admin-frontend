@@ -38,12 +38,9 @@ class ValidatePublisherRefHeaderAction @Inject()(appConfig: AppConfig)(implicit 
     logger.debug(s"**** in header validator")
     val publisherRef = request.headers.get(HeaderKeys.publisherRefKey).getOrElse("")
 
-     if (!publisherRef.isEmpty && validatePublisherRef(publisherRef)) Future.successful(None)
+     if (publisherRef.nonEmpty) Future.successful(None)
      else Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid"))))
   
   }
 
-  private def validatePublisherRef(publisherRef: String) ={
-    publisherRef.nonEmpty
-  }
 }

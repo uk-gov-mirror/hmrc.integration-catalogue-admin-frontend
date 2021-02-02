@@ -22,6 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
+import play.api.libs.json.JsObject
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.Helpers._
@@ -29,25 +30,19 @@ import play.api.test.{FakeRequest, StubBodyParserFactory}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishError, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
+import java.util.UUID
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidatePlatformHeaderAction
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateSpecificationTypeHeaderAction
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidatePublisherRefHeaderAction
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
-import uk.gov.hmrc.integrationcatalogueadminfrontend.views.html.Head
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsErrorResponse
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ErrorCode
-import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 
 class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
-   private val fakeRequest = FakeRequest("POST", "/")
-     .withHeaders("Content-Type" -> "multipart/form-data; boundary=------------------------26f1ee0a6a23ce9b")
 
    implicit lazy val mat: Materializer = app.materializer
 
@@ -59,10 +54,12 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
    private val platformHeaderValidator = app.injector.instanceOf[ValidatePlatformHeaderAction]
     private val specificationTypeHeaderValidator = app.injector.instanceOf[ValidateSpecificationTypeHeaderAction]
      private val publisherRefHeaderValidator = app.injector.instanceOf[ValidatePublisherRefHeaderAction]
+
+  private val publisherReference = "123456"
    private implicit val hc: HeaderCarrier = HeaderCarrier()
-    val validHeaders = Seq((HeaderKeys.platformKey -> "CORE_IF"),
-     (HeaderKeys.specificationTypeKey -> "OAS_V3"),
-     (HeaderKeys.publisherRefKey -> "123456"))
+    val validHeaders = Seq(HeaderKeys.platformKey -> PlatformType.CORE_IF.toString,
+     HeaderKeys.specificationTypeKey -> "OAS_V3",
+     HeaderKeys.publisherRefKey -> publisherReference)
 
   implicit class MyWrappedResult(result:Future[Result]) extends Matchers {
     def shouldBeResult(expectedStatus:Int): Unit = {
@@ -85,8 +82,8 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
     def callPublish(expectedConnectorResponse: Option[PublishResult],
               headers: Seq[(String, String)],
               filePartKey: String,
-              fileName: String) = {
-     expectedConnectorResponse.map(response =>       
+              fileName: String): Future[Result] = {
+     expectedConnectorResponse.map(response =>
         when(mockPublishService.publishApi(*, *, *, *, *)(*)).thenReturn(Future.successful(response))
      )
 
@@ -109,102 +106,105 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
   "POST /publish" should {
 
      "return 200 when valid payload is sent" in new Setup{
-     
-       val result =  callPublish(Some(PublishResult(true, List.empty)), validHeaders, "selectedFile", "text.txt")
+
+       val id = UUID.randomUUID()
+       val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = true,
+           Some(PublishDetails(IntegrationId(id), publisherReference, PlatformType.CORE_IF)),
+         List.empty)), validHeaders, "selectedFile", "text.txt")
 
        result shouldBeResult OK
-       contentAsString(result) shouldBe "Publish Successful"
+       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
      }
 
     "return 200 when valid payload is sent but publish fails" in new Setup{
-     val result =  callPublish(Some(PublishResult(false, List(PublishError(123, "some message")))),
+     val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = false, None, List(PublishError(123, "some message")))),
       validHeaders, "selectedFile", "text.txt")
 
 
       result shouldBeResult OK
-      contentAsString(result) shouldBe "Publish Failed"
+      contentAsString(result) shouldBe "{\"isSuccess\":false,\"errors\":[{\"code\":123,\"message\":\"some message\"}]}"
     }
 
      "return 400 and not call connector when invalid file" in new Setup{
 
 
-      val result =  callPublish(None, validHeaders, "CANT FIND ME", "text3.txt")
+      val result: Future[Result] =  callPublish(None, validHeaders, "CANT FIND ME", "text3.txt")
 
 
-       contentAsString(result) shouldBe "SOME ERROR"
+       contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Unable to retrieve published file contents\"}"
        result shouldBeResult BAD_REQUEST
 
        verifyZeroInteractions(mockPublishService)
      }
 
      "return 400 when plaform not set in header" in new Setup {
-      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.platformKey)), "selectedFile", "text.txt")
+      val result: Future[Result] =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.platformKey)), "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
 
-     "return 400 when plaform is invalid in header" in new Setup {
-           val headers = Seq((HeaderKeys.platformKey -> "SOME_RUBBISH"),
-                              (HeaderKeys.specificationTypeKey -> "OAS_V3"),
-                              (HeaderKeys.publisherRefKey -> "123456"))
-      val result =  callPublish(None, headers, "selectedFile", "text.txt")
+     "return 400 when platform is invalid in header" in new Setup {
+           val headers = Seq(HeaderKeys.platformKey -> "SOME_RUBBISH",
+                              HeaderKeys.specificationTypeKey -> "OAS_V3",
+                              HeaderKeys.publisherRefKey -> "123456")
+      val result: Future[Result] =  callPublish(None, headers, "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
 
      "return 400 when specType not set in header" in new Setup {
-      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.specificationTypeKey)), "selectedFile", "text.txt")
+      val result: Future[Result] =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.specificationTypeKey)), "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
 
      "return 400 when specType is invalid in header" in new Setup {
-           val headers = Seq((HeaderKeys.platformKey -> "CORE_IF"),
-                              (HeaderKeys.specificationTypeKey -> "SOME_RUBBISH"),
-                              (HeaderKeys.publisherRefKey -> "123456"))
-      val result =  callPublish(None, headers, "selectedFile", "text.txt")
+           val headers = Seq(HeaderKeys.platformKey -> "CORE_IF",
+                              HeaderKeys.specificationTypeKey -> "SOME_RUBBISH",
+                              HeaderKeys.publisherRefKey -> "123456")
+      val result: Future[Result] =  callPublish(None, headers, "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
 
 
      "return 400 when publisherRef not set in header" in new Setup {
-      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.publisherRefKey)), "selectedFile", "text.txt")
+      val result: Future[Result] =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.publisherRefKey)), "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
 
      "return 400 when publisherRef is invalid in header" in new Setup {
-      val invalidHeaders = Seq((HeaderKeys.platformKey -> "CORE_IF"),
-     (HeaderKeys.specificationTypeKey -> "OAS_V3"),
-     (HeaderKeys.publisherRefKey -> ""))
-      val result =  callPublish(None, invalidHeaders, "selectedFile", "text.txt")
+      val invalidHeaders = Seq(HeaderKeys.platformKey -> "CORE_IF",
+        HeaderKeys.specificationTypeKey -> "OAS_V3",
+        HeaderKeys.publisherRefKey -> "")
+      val result: Future[Result] =  callPublish(None, invalidHeaders, "selectedFile", "text.txt")
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 

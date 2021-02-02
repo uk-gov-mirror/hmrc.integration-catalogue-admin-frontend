@@ -24,5 +24,8 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
 case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
 
 case class PublishError(code: Int, message: String)
-case class PublishResult(isSuccess: Boolean, errors: List[PublishError] = List.empty)
+
+case class PublishDetails(integrationId: IntegrationId, publisherReference: String, platformType: PlatformType)
+
+case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
 

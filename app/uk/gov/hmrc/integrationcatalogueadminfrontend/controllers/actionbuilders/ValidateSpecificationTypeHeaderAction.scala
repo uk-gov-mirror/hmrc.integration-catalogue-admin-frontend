@@ -38,7 +38,7 @@ class ValidateSpecificationTypeHeaderAction @Inject()(appConfig: AppConfig)(impl
 
     val specType = request.headers.get(HeaderKeys.specificationTypeKey).getOrElse("")
 
-     if (!specType.isEmpty && validateSpecificationType(specType)) Future.successful(None)
+     if (specType.nonEmpty && validateSpecificationType(specType)) Future.successful(None)
      else Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid"))))
   
   }
