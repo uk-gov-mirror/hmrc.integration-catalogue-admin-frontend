@@ -36,6 +36,14 @@ import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidatePlatformHeaderAction
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateSpecificationTypeHeaderAction
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidatePublisherRefHeaderAction
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.views.html.Head
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsErrorResponse
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ErrorCode
+import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 
 class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
    private val fakeRequest = FakeRequest("POST", "/")
@@ -48,8 +56,13 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
 
    private val serviceConfig = new ServicesConfig(configuration)
    private val appConfig     = new AppConfig(configuration, serviceConfig)
+   private val platformHeaderValidator = app.injector.instanceOf[ValidatePlatformHeaderAction]
+    private val specificationTypeHeaderValidator = app.injector.instanceOf[ValidateSpecificationTypeHeaderAction]
+     private val publisherRefHeaderValidator = app.injector.instanceOf[ValidatePublisherRefHeaderAction]
    private implicit val hc: HeaderCarrier = HeaderCarrier()
-
+    val validHeaders = Seq((HeaderKeys.platformKey -> "CORE_IF"),
+     (HeaderKeys.specificationTypeKey -> "OAS_V3"),
+     (HeaderKeys.publisherRefKey -> "123456"))
 
   implicit class MyWrappedResult(result:Future[Result]) extends Matchers {
     def shouldBeResult(expectedStatus:Int): Unit = {
@@ -58,45 +71,55 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
   }
 
   trait Setup {
-    val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
+    val mockPublishService: PublishService = mock[PublishService]
 
-    val controller = new PublishController(appConfig, stubMessagesControllerComponents(), mockIntegrationCatalogueConnector, stubPlayBodyParsers(mat))
+    val controller = new PublishController(appConfig,
+        stubMessagesControllerComponents(),
+        mockPublishService,
+        platformHeaderValidator,
+        specificationTypeHeaderValidator,
+        publisherRefHeaderValidator,
+        stubPlayBodyParsers(mat),
+      )
+
+    def callPublish(expectedConnectorResponse: Option[PublishResult],
+              headers: Seq[(String, String)],
+              filePartKey: String,
+              fileName: String) = {
+     expectedConnectorResponse.map(response =>       
+        when(mockPublishService.publishApi(*, *, *, *, *)(*)).thenReturn(Future.successful(response))
+     )
+
+      val tempFile = SingletonTemporaryFileCreator.create("text","txt")
+      tempFile.deleteOnExit()
+
+      val data = new MultipartFormData[TemporaryFile](Map(),
+        List(FilePart(filePartKey, fileName, Some("text/plain"), tempFile)), List())
+
+          val publishRequest =  FakeRequest.apply("PUT", "integration-catalogue-admin-frontend/publish/api")
+        .withHeaders(headers: _*)
+        .withBody(data)
+
+      controller.publishApi()(publishRequest)
+  }
 
   }
 
 
   "POST /publish" should {
+
      "return 200 when valid payload is sent" in new Setup{
-
-       val successResponse = PublishResult(true, List.empty)
-       when(mockIntegrationCatalogueConnector.publish(*)(*)).thenReturn(Future.successful(successResponse))
-
-       val tempFile = SingletonTemporaryFileCreator.create("text","txt")
-       tempFile.deleteOnExit()
-
-       val data = new MultipartFormData[TemporaryFile](Map(),
-         List(FilePart("selectedFile", "text.txt", Some("text/plain"), tempFile)), List())
-       val request =  FakeRequest.apply("POST", "integration-catalogue-admin-frontend/publish/api")
-         .withBody(data)
-       val result = controller.publishApi()(request)
+     
+       val result =  callPublish(Some(PublishResult(true, List.empty)), validHeaders, "selectedFile", "text.txt")
 
        result shouldBeResult OK
        contentAsString(result) shouldBe "Publish Successful"
      }
 
     "return 200 when valid payload is sent but publish fails" in new Setup{
+     val result =  callPublish(Some(PublishResult(false, List(PublishError(123, "some message")))),
+      validHeaders, "selectedFile", "text.txt")
 
-      val successResponse = PublishResult(false, List(PublishError(123, "some message")))
-      when(mockIntegrationCatalogueConnector.publish(*)(*)).thenReturn(Future.successful(successResponse))
-
-      val tempFile = SingletonTemporaryFileCreator.create("text","txt")
-      tempFile.deleteOnExit()
-
-      val data = new MultipartFormData[TemporaryFile](Map(),
-        List(FilePart("selectedFile", "text.txt", Some("text/plain"), tempFile)), List())
-      val request =  FakeRequest.apply("POST", "integration-catalogue-admin-frontend/publish/api")
-        .withBody(data)
-      val result = controller.publishApi()(request)
 
       result shouldBeResult OK
       contentAsString(result) shouldBe "Publish Failed"
@@ -104,21 +127,86 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
 
      "return 400 and not call connector when invalid file" in new Setup{
 
-       val successResponse = PublishResult(true, List.empty)
 
-       val tempFile = SingletonTemporaryFileCreator.create("text","txt")
-       tempFile.deleteOnExit()
+      val result =  callPublish(None, validHeaders, "CANT FIND ME", "text3.txt")
 
-       val data = new MultipartFormData[TemporaryFile](Map(),
-         List(FilePart("CANT FIND ME", "text3.txt", Some("text/plain"), tempFile)), List())
-       val request =  FakeRequest.apply("POST", "integration-catalogue-admin-frontend/publish/api")
-         .withBody(data)
-       val result = controller.publishApi()(request)
 
        contentAsString(result) shouldBe "SOME ERROR"
        result shouldBeResult BAD_REQUEST
 
-       verifyZeroInteractions(mockIntegrationCatalogueConnector)
+       verifyZeroInteractions(mockPublishService)
      }
+
+     "return 400 when plaform not set in header" in new Setup {
+      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.platformKey)), "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
+
+     "return 400 when plaform is invalid in header" in new Setup {
+           val headers = Seq((HeaderKeys.platformKey -> "SOME_RUBBISH"),
+                              (HeaderKeys.specificationTypeKey -> "OAS_V3"),
+                              (HeaderKeys.publisherRefKey -> "123456"))
+      val result =  callPublish(None, headers, "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
+
+     "return 400 when specType not set in header" in new Setup {
+      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.specificationTypeKey)), "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
+
+     "return 400 when specType is invalid in header" in new Setup {
+           val headers = Seq((HeaderKeys.platformKey -> "CORE_IF"),
+                              (HeaderKeys.specificationTypeKey -> "SOME_RUBBISH"),
+                              (HeaderKeys.publisherRefKey -> "123456"))
+      val result =  callPublish(None, headers, "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
+
+
+     "return 400 when publisherRef not set in header" in new Setup {
+      val result =  callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.publisherRefKey)), "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
+
+     "return 400 when publisherRef is invalid in header" in new Setup {
+      val invalidHeaders = Seq((HeaderKeys.platformKey -> "CORE_IF"),
+     (HeaderKeys.specificationTypeKey -> "OAS_V3"),
+     (HeaderKeys.publisherRefKey -> ""))
+      val result =  callPublish(None, invalidHeaders, "selectedFile", "text.txt")
+      
+      status(result) shouldBe BAD_REQUEST
+
+      val jsErrorResponse  =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      contentAsJson(result) shouldBe jsErrorResponse
+    }
+
    }
 }

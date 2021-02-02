@@ -7,4 +7,4 @@ GET        /assets/*file            controllers.Assets.versioned(path = "/public
 
 
 # publish
-POST      /publish/api              uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
+POST      /api/publish              uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()

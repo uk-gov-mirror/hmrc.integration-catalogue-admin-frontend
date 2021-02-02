@@ -5,11 +5,15 @@ import sbt._
 
 object AppDependencies {
 
+
+ lazy val enumeratumVersion = "1.5.12"
+
   val compile = Seq(
     "uk.gov.hmrc" %% "bootstrap-frontend-play-27" % "3.3.0",
     "uk.gov.hmrc" %% "play-frontend-hmrc" % "0.37.0-play-27",
     "uk.gov.hmrc" %% "play-frontend-govuk" % "0.60.0-play-27",
     "uk.gov.hmrc" %% "play-language" % "4.7.0-play-27",
+    "com.beachape"                      %% "enumeratum-play-json"           % enumeratumVersion,
     "com.fasterxml.jackson.core" % "jackson-core" % "2.11.1",
     "com.fasterxml.jackson.core" % "jackson-annotations" % "2.11.1",
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.11.1",

@@ -21,19 +21,24 @@ import play.api.Logging
 import play.api.libs.Files
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 
 @Singleton
 class PublishController @Inject()(
   appConfig: AppConfig,
   mcc: MessagesControllerComponents,
-  integrationCatalogueConnector: IntegrationCatalogueConnector,
+  publishService: PublishService,
+  validatePlatformHeaderAction: ValidatePlatformHeaderAction,
+  validateSpecificationTypeHeaderAction: ValidateSpecificationTypeHeaderAction,
+  validatePublisherRefHeaderAction: ValidatePublisherRefHeaderAction,
   playBodyParsers: PlayBodyParsers)
   (implicit ec: ExecutionContext)
     extends FrontendController(mcc) with Logging{
@@ -41,19 +46,32 @@ class PublishController @Inject()(
   implicit val config: AppConfig = appConfig
 
 
-    def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = Action.async(playBodyParsers.multipartFormData) { implicit request =>
+    def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = 
+    
+    (Action andThen 
+    validatePlatformHeaderAction andThen
+    validatePublisherRefHeaderAction andThen
+    validateSpecificationTypeHeaderAction).async(playBodyParsers.multipartFormData) { implicit request =>
 
-      request.body.file("selectedFile").map { selectedFile =>
+      (request.headers.get(HeaderKeys.platformKey), 
+      request.headers.get(HeaderKeys.specificationTypeKey),
+       request.headers.get(HeaderKeys.publisherRefKey)) match {
+        case (Some(platformType), Some(specificationType), Some(publisherRef)) => {request.body.file("selectedFile").map { selectedFile =>
+                    val convertedPlatformType = PlatformType.withNameInsensitive(platformType)
+                    val convertedSpecType = SpecificationType.withNameInsensitive(specificationType)
+                    val fileContents = Source.fromFile(selectedFile.ref.path.toFile).getLines.mkString("\r\n")
 
-        val fileContents = Source.fromFile(selectedFile.ref.path.toFile).getLines.mkString("\r\n")
-
-        for {
-          response <- integrationCatalogueConnector.publish(PublishRequest(selectedFile.filename, fileContents))
-          result <- handlePublishResult(response)
-        } yield result
-      }.getOrElse {
-        Future.successful(BadRequest("SOME ERROR"))
+                    for {
+                      response <- publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
+                      result <- handlePublishResult(response)
+                    } yield result
+                  }.getOrElse {
+                    Future.successful(BadRequest("SOME ERROR"))
+                  }
+       }            
+        case _ => Future.successful(BadRequest("SOME ERROR"))
       }
+      
     }
 
   def handlePublishResult(result: PublishResult) ={

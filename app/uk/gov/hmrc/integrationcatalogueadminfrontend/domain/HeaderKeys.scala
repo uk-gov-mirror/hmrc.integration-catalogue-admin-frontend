@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
+package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
 
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+object HeaderKeys{
+val platformKey: String = "x-platformType"
+val specificationTypeKey: String = "x-specificationType"
+val publisherRefKey: String = "x-publisherRef"
 
-
-
-
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
-
-case class PublishError(code: Int, message: String)
-case class PublishResult(isSuccess: Boolean, errors: List[PublishError] = List.empty)
-
+}

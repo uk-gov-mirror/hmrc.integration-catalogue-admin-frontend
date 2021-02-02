@@ -30,13 +30,15 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishR
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.PlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.SpecificationType
 
 class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with OptionValues with MockitoSugar with BeforeAndAfterEach {
   private val mockHttpClient = mock[HttpClient]
   private val mockAppConfig = mock[AppConfig]
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
   private implicit val hc: HeaderCarrier = HeaderCarrier()
-  val outboundUrl = "/integration-catalogue/publish"
+  val outboundUrl = "/integration-catalogue/api/publish"
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -53,27 +55,27 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
 
   "IntegrationCatalogueConnector send" should {
     def httpCallWillSucceedWithResponse(response: PublishResult) =
-      when(mockHttpClient.POST[PublishRequest, PublishResult]
+      when(mockHttpClient.PUT[PublishRequest, PublishResult]
         (eqTo(outboundUrl), any[PublishRequest], any[Seq[(String, String)]])
         (any[Writes[PublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(response))
 
     def httpCallWillFailWithException(exception: Throwable) =
-      when(mockHttpClient.POST[PublishRequest, PublishResult]
+      when(mockHttpClient.PUT[PublishRequest, PublishResult]
         (eqTo(outboundUrl), any[PublishRequest], any[Seq[(String, String)]])
         (any[Writes[PublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
+      val request: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
       httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, List.empty))
 
-      val request: PublishRequest = PublishRequest("fileName", "{}")
 
       val result: PublishResult = Await.result(connector.publish(request), 500 millis)
       result.isSuccess shouldBe true
 
-      verify(mockHttpClient).POST(eqTo(outboundUrl), eqTo(request),
+      verify(mockHttpClient).PUT(eqTo(outboundUrl), eqTo(request),
         any[Seq[(String, String)]])(any[Writes[PublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])
 
     }
@@ -81,14 +83,12 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
     "handle exceptions" in new SetUp {
       httpCallWillFailWithException(new BadGatewayException("some error"))
 
-      val request: PublishRequest = PublishRequest("fileName", "{}")
-
      val exception=  intercept[RuntimeException]{
         Await.result(connector.publish(request), 500 millis)
       }
       exception.getMessage should be("Unexpected response from /integration-catalogue: some error")
 
-      verify(mockHttpClient).POST(eqTo(outboundUrl), eqTo(request),
+      verify(mockHttpClient).PUT(eqTo(outboundUrl), eqTo(request),
         any[Seq[(String, String)]])(any[Writes[PublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])
 
     }
