@@ -21,17 +21,16 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.Writes
 import play.api.test.Helpers
 import uk.gov.hmrc.http.{BadGatewayException, HttpClient, _}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.{IntegrationId, PlatformType, SpecificationType}
 
+import java.util.UUID
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.PlatformType
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.SpecificationType
 
 class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with OptionValues with MockitoSugar with BeforeAndAfterEach {
   private val mockHttpClient = mock[HttpClient]
@@ -69,7 +68,7 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
       val request: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
-      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, List.empty))
+      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platform)), List.empty))
 
 
       val result: PublishResult = Await.result(connector.publish(request), 500 millis)

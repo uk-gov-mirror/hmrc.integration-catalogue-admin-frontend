@@ -24,29 +24,33 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatal
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRequest
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishRequest, PublishResult}
+
 import scala.concurrent.Future
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishResult
 import uk.gov.hmrc.http.HeaderCarrier
+
+import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class PublishServiceSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with MockitoSugar  {
 
-val mockIntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
+val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
 private implicit val hc: HeaderCarrier = HeaderCarrier()
 
 trait SetUp {
     val objInTest = new PublishService(mockIntegrationCatalogueConnector)
-    val publishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents")
-    val publishResult = PublishResult(true)
+    val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents")
+    val publishResult: PublishResult =
+      PublishResult(isSuccess = true, Some(PublishDetails(IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 }
 
 "publishApi" should {
   "return value from connector" in new SetUp {
     when(mockIntegrationCatalogueConnector.publish(eqTo(publishRequest))(*)).thenReturn(Future.successful(publishResult))
 
-    val result = Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents"), 500 millis)
+    val result: PublishResult =
+      Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents"), 500 millis)
     result shouldBe publishResult
 
     verify(mockIntegrationCatalogueConnector).publish(eqTo(publishRequest))(eqTo(hc))

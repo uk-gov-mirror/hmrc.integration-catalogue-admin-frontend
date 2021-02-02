@@ -2,9 +2,6 @@
 
 ->         /govuk-frontend          govuk.Routes
 ->         /hmrc-frontend           hmrcfrontend.Routes
+->         /services                services.Routes
 GET        /hello-world             uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.HelloWorldController.helloWorld
 GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)
-
-
-# publish
-POST      /api/publish              uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()

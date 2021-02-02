@@ -21,6 +21,14 @@ import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 
+import java.util.UUID
+
+case class IntegrationId(value: UUID) extends AnyVal
+
+object IntegrationId {
+  import play.api.libs.json.Json
+  implicit val apiIdFormat = Json.valueFormat[IntegrationId]
+}
 
 sealed trait PlatformType extends EnumEntry
 

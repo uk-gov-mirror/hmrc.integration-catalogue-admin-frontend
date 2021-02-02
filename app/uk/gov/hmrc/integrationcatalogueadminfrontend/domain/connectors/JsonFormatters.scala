@@ -21,5 +21,6 @@ import play.api.libs.json.Json
 object JsonFormatters {
   implicit val publishRequestFormat = Json.format[PublishRequest]
   implicit val publishErrorFormat = Json.format[PublishError]
+  implicit val publishDetailsFormat = Json.format[PublishDetails]
   implicit val publishResultFormat = Json.format[PublishResult]
 }

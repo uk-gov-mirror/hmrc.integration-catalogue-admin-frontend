@@ -19,11 +19,13 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 
 import play.api.Logging
 import play.api.libs.Files
+import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
@@ -33,54 +35,46 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 
 @Singleton
 class PublishController @Inject()(
-  appConfig: AppConfig,
-  mcc: MessagesControllerComponents,
-  publishService: PublishService,
-  validatePlatformHeaderAction: ValidatePlatformHeaderAction,
-  validateSpecificationTypeHeaderAction: ValidateSpecificationTypeHeaderAction,
-  validatePublisherRefHeaderAction: ValidatePublisherRefHeaderAction,
-  playBodyParsers: PlayBodyParsers)
-  (implicit ec: ExecutionContext)
-    extends FrontendController(mcc) with Logging{
+                                   appConfig: AppConfig,
+                                   mcc: MessagesControllerComponents,
+                                   publishService: PublishService,
+                                   validatePlatformHeaderAction: ValidatePlatformHeaderAction,
+                                   validateSpecificationTypeHeaderAction: ValidateSpecificationTypeHeaderAction,
+                                   validatePublisherRefHeaderAction: ValidatePublisherRefHeaderAction,
+                                   playBodyParsers: PlayBodyParsers)
+                                 (implicit ec: ExecutionContext)
+  extends FrontendController(mcc) with Logging {
 
   implicit val config: AppConfig = appConfig
 
 
-    def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = 
-    
-    (Action andThen 
-    validatePlatformHeaderAction andThen
-    validatePublisherRefHeaderAction andThen
-    validateSpecificationTypeHeaderAction).async(playBodyParsers.multipartFormData) { implicit request =>
+  def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] =
 
-      (request.headers.get(HeaderKeys.platformKey), 
-      request.headers.get(HeaderKeys.specificationTypeKey),
-       request.headers.get(HeaderKeys.publisherRefKey)) match {
-        case (Some(platformType), Some(specificationType), Some(publisherRef)) => {request.body.file("selectedFile").map { selectedFile =>
-                    val convertedPlatformType = PlatformType.withNameInsensitive(platformType)
-                    val convertedSpecType = SpecificationType.withNameInsensitive(specificationType)
-                    val fileContents = Source.fromFile(selectedFile.ref.path.toFile).getLines.mkString("\r\n")
+    (Action andThen
+      validatePlatformHeaderAction andThen
+      validatePublisherRefHeaderAction andThen
+      validateSpecificationTypeHeaderAction).async(playBodyParsers.multipartFormData) { implicit request =>
 
-                    for {
-                      response <- publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
-                      result <- handlePublishResult(response)
-                    } yield result
-                  }.getOrElse {
-                    Future.successful(BadRequest("SOME ERROR"))
-                  }
-       }            
-        case _ => Future.successful(BadRequest("SOME ERROR"))
+      (request.headers.get(HeaderKeys.platformKey),
+        request.headers.get(HeaderKeys.specificationTypeKey),
+        request.headers.get(HeaderKeys.publisherRefKey)) match {
+        case (Some(platformType), Some(specificationType), Some(publisherRef)) =>
+          request.body.file("selectedFile").map { selectedFile =>
+            val convertedPlatformType = PlatformType.withNameInsensitive(platformType)
+            val convertedSpecType = SpecificationType.withNameInsensitive(specificationType)
+            val bufferedSource = Source.fromFile(selectedFile.ref.path.toFile)
+            val fileContents = bufferedSource.getLines.mkString("\r\n")
+            bufferedSource.close()
+            publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
+            .map(result => Ok(Json.toJson(result)))
+          }.getOrElse {
+            Future.successful(BadRequest(Json.toJson(JsErrorResponse(ErrorCode.BAD_REQUEST, "Unable to retrieve published file contents"))))
+          }
+        case _ => Future.successful(BadRequest(Json.toJson(JsErrorResponse(ErrorCode.BAD_REQUEST, "Please provide valid headers"))))
       }
-      
+
     }
 
-  def handlePublishResult(result: PublishResult) ={
-    if(result.isSuccess){
-      Future.successful(Ok("Publish Successful"))
-    }else{
-      logger.info(result.errors.head.message)
-      Future.successful(Ok("Publish Failed"))
-    }
-  }
+
 
 }
