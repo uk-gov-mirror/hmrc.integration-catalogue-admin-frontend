@@ -30,9 +30,10 @@ paths:
           schema:
             type: string
             enum:
-              - IF
-              - API Platform
+              - CORE_IF
+              - API_PLATFORM
               - DES
+              - CMA
             example: JSON
         - in: header
           name: x-publisher-reference
@@ -41,19 +42,28 @@ paths:
           schema:
             type: string
             example: 1234
+        - in: header
+          name: x-specification-type
+          schema:
+            type: string
+            enum:
+              - OAS_V3
       requestBody:
         description: The body of the OAS file
         required: true
         content:
-          application/oas3: 
+          multipart/form-data:
             schema:
-              type: string
-              example: |
-                openapi: 3.0.0
-                info:
-                  version: '0.1'
-                  title: My new API
-                  ...
+              type: object
+              properties:
+                selectedFile:
+                  type: string
+                  example: |
+                    openapi: 3.0.0
+                    info:
+                      version: '0.1'
+                      title: My new API
+                      ...
       responses:
         '201':
           description: 
@@ -81,6 +91,8 @@ paths:
                 $ref: '#/components/schemas/Errors'
   /services/apis:
     get:
+      description: 
+        DRAFT
       tags:
         - Publishing
       responses:
@@ -95,6 +107,8 @@ paths:
                   $ref: '#/components/schemas/Api'
   /services/apis/{api-id}:
     get:
+      description: 
+        DRAFT
       tags:
         - Publishing
       parameters:
@@ -112,6 +126,8 @@ paths:
                 type: object
                 $ref: '#/components/schemas/Api'
     delete:
+      description: 
+        DRAFT
       tags:
         - Publishing
       security:
@@ -137,27 +153,19 @@ components:
     Api:
       type: object
       properties:
-        api-id:
+        id:
           type: string
           format: uuid
           example: 2e9772e9-3c6a-4f1b-a9a3-0b205cbca4fb
-        publisher-reference :
+        publisherReference :
           type: string
-          example: 1234
-        name:
-          type: string
+          example: "1234"
         platform:
           type: string
           example: IF
     Errors:
       type: object
       properties:
-        code: 
-          type: string
-          example: "INVALID_OAS_FILE"
-        message:
-          type: string
-          example: "Unable to parse invalid OAS file"
         errors:
           type: array
           items:
@@ -166,12 +174,9 @@ components:
     Error:
       type: object
       properties:
-        code:
-          type: string
         message:
           type: string
-          example: 
-            - "Unable to parse OAS line 50"
+          example: "Unable to parse OAS line 50"
     ApiId:
       type: string
       format: uuid
