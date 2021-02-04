@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.services
 
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.mockito.scalatest.MockitoSugar
 import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
@@ -32,8 +30,10 @@ import uk.gov.hmrc.http.HeaderCarrier
 import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.WordSpec
+import org.scalatest.Matchers
 
-class PublishServiceSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with MockitoSugar  {
+class PublishServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar  {
 
 val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
 private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -42,7 +42,7 @@ trait SetUp {
     val objInTest = new PublishService(mockIntegrationCatalogueConnector)
     val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents")
     val publishResult: PublishResult =
-      PublishResult(isSuccess = true, Some(PublishDetails(IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
+      PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 }
 
 "publishApi" should {

@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
-
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+package support
 
 
+import com.github.tomakehurst.wiremock.client.WireMock._
+
+trait IntegrationCatalogueService {
+  val publishUrl = "/integration-catalogue/apis/publish"
 
 
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
 
-case class PublishError(code: Int, message: String)
+  def primeIntegrationCatalogueServiceWithBody(status : Int, responseBody : String)= {
 
-case class PublishDetails(isUpdate: Boolean, integrationId: IntegrationId, publisherReference: String, platformType: PlatformType)
+      stubFor(put(urlEqualTo(publishUrl))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(responseBody)
+      )
+    )
+  }
 
-case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
 
+}

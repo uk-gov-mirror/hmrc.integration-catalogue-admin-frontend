@@ -35,11 +35,13 @@ class ValidatePublisherRefHeaderAction @Inject()(appConfig: AppConfig)(implicit 
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
 
-    logger.debug(s"**** in header validator")
     val publisherRef = request.headers.get(HeaderKeys.publisherRefKey).getOrElse("")
 
      if (publisherRef.nonEmpty) Future.successful(None)
-     else Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid"))))
+     else {
+       logger.info("Invalid publisher reference header Provided")
+       Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid"))))
+     }
   
   }
 

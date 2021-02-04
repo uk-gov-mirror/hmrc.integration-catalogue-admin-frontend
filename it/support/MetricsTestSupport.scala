@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
-
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+package support
 
 
+import com.kenshoo.play.metrics.Metrics
+import org.scalatest.Suite
+import play.api.Application
+
+import scala.collection.JavaConverters
+
+trait MetricsTestSupport {
+  self: Suite =>
+
+  def app: Application
+
+  def givenCleanMetricRegistry(): Unit = {
+    val registry = app.injector.instanceOf[Metrics].defaultRegistry
+    for (metric <- JavaConverters
+      .asScalaIterator[String](registry.getMetrics.keySet().iterator())) {
+      registry.remove(metric)
+    }
+  }
 
 
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
-
-case class PublishError(code: Int, message: String)
-
-case class PublishDetails(isUpdate: Boolean, integrationId: IntegrationId, publisherReference: String, platformType: PlatformType)
-
-case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
-
+}

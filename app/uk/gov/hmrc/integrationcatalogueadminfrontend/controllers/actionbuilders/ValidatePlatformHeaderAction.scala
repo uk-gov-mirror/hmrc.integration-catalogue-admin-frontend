@@ -36,11 +36,13 @@ class ValidatePlatformHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: 
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
 
-    logger.debug(s"**** in header validator")
     val platformType = request.headers.get(HeaderKeys.platformKey).getOrElse("")
 
      if (platformType.nonEmpty && validatePlatformType(platformType)) Future.successful(None)
-     else Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid"))))
+     else {
+       logger.info("Invalid platform header provided")
+       Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid"))))
+     }
   
   }
 

@@ -35,7 +35,7 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
   private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
   def publish(publishRequest: PublishRequest)(implicit hc: HeaderCarrier): Future[PublishResult] = {
-    http.PUT[PublishRequest, PublishResult](s"$externalServiceUri/api/publish", publishRequest)
+    http.PUT[PublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
     .recover {
       case NonFatal(e) => throw new RuntimeException(s"Unexpected response from $externalServiceUri: ${e.getMessage}")
     }

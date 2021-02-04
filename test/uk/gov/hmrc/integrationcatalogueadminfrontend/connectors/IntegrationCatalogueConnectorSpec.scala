@@ -18,8 +18,7 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.connectors
 
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.scalatest.MockitoSugar
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import play.api.libs.json.Writes
 import play.api.test.Helpers
@@ -31,13 +30,15 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.{IntegrationId, Plat
 import java.util.UUID
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
+import org.scalatest.WordSpec
+import org.scalatest.Matchers
 
-class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with OptionValues with MockitoSugar with BeforeAndAfterEach {
+class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with OptionValues with MockitoSugar with BeforeAndAfterEach {
   private val mockHttpClient = mock[HttpClient]
   private val mockAppConfig = mock[AppConfig]
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
   private implicit val hc: HeaderCarrier = HeaderCarrier()
-  val outboundUrl = "/integration-catalogue/api/publish"
+  val outboundUrl = "/integration-catalogue/apis/publish"
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -68,7 +69,7 @@ class IntegrationCatalogueConnectorSpec extends AnyWordSpec with Matchers with O
       val request: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
-      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platform)), List.empty))
+      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platform)), List.empty))
 
 
       val result: PublishResult = Await.result(connector.publish(request), 500 millis)

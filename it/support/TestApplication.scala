@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
-
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+package support
 
 
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 
+trait TestApplication {
+  _: BaseISpec =>
 
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
+  override implicit lazy val app: Application = appBuilder.build()
 
-case class PublishError(code: Int, message: String)
+  protected override def appBuilder: GuiceApplicationBuilder =
+    new GuiceApplicationBuilder()
+      .configure(
+        "microservice.services.auth.port" -> wireMockPort,
+        "metrics.enabled"                 -> true,
+        "auditing.enabled"                -> true,
+        "auditing.consumer.baseUri.host"  -> wireMockHost,
+        "auditing.consumer.baseUri.port"  -> wireMockPort
+      )
 
-case class PublishDetails(isUpdate: Boolean, integrationId: IntegrationId, publisherReference: String, platformType: PlatformType)
-
-case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
+}
 

@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
+package support
 
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Seconds, Span}
 
+import play.api.Application
+import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 
+abstract class ServerBaseISpec
+  extends BaseISpec with GuiceOneServerPerSuite with TestApplication with ScalaFutures {
 
+  override implicit lazy val app: Application = appBuilder.build()
 
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = Span(4, Seconds), interval = Span(1, Seconds))
 
-case class PublishError(code: Int, message: String)
-
-case class PublishDetails(isUpdate: Boolean, integrationId: IntegrationId, publisherReference: String, platformType: PlatformType)
-
-case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
-
+}

@@ -18,8 +18,7 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 
 import akka.stream.Materializer
 import org.mockito.scalatest.MockitoSugar
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.libs.json.JsObject
@@ -31,18 +30,17 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
 import java.util.UUID
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
+class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
 
    implicit lazy val mat: Materializer = app.materializer
 
@@ -105,15 +103,26 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
 
   "POST /publish" should {
 
-     "return 200 when valid payload is sent" in new Setup{
+     "return 201 when valid payload is sent" in new Setup{
 
        val id = UUID.randomUUID()
        val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = true,
-           Some(PublishDetails(IntegrationId(id), publisherReference, PlatformType.CORE_IF)),
+           Some(PublishDetails(false, IntegrationId(id), publisherReference, PlatformType.CORE_IF)),
+         List.empty)), validHeaders, "selectedFile", "text.txt")
+
+       result shouldBeResult CREATED
+       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"isUpdate":false,"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
+     }
+
+   "return 200 when valid payload is sent" in new Setup{
+
+       val id = UUID.randomUUID()
+       val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = true,
+           Some(PublishDetails(true, IntegrationId(id), publisherReference, PlatformType.CORE_IF)),
          List.empty)), validHeaders, "selectedFile", "text.txt")
 
        result shouldBeResult OK
-       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
+       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"isUpdate":true,"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
      }
 
     "return 200 when valid payload is sent but publish fails" in new Setup{
@@ -131,7 +140,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       val result: Future[Result] =  callPublish(None, validHeaders, "CANT FIND ME", "text3.txt")
 
 
-       contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Unable to retrieve published file contents\"}"
+       contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"selectedFile is missing from requestBody\"}"
        result shouldBeResult BAD_REQUEST
 
        verifyZeroInteractions(mockPublishService)
@@ -142,7 +151,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -155,7 +164,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -165,7 +174,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -179,7 +188,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -191,7 +200,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -204,7 +213,7 @@ class PublishControllerSpec extends AnyWordSpecLike with Matchers with GuiceOneA
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference Header is missing or invalid")
+      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid")
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
