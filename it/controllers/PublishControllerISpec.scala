@@ -28,7 +28,7 @@ import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, _}
 import support.{IntegrationCatalogueService, ServerBaseISpec}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.{HeaderKeys, IntegrationId, PlatformType}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
 import utils.MultipartFormDataWritable
 
@@ -116,17 +116,17 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         
         val response  = route(app, validPublishRequest).get
         status(response) mustBe 201
-  
+        // check body
       }
 
-      "respond with 200 when valid request and a create but returns isSuccess = false" in new Setup{
+      "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
       
         val backendResponse = createBackendResponse(isSuccess = false, isUpdate = false)
         primeIntegrationCatalogueServiceWithBody(200, Json.toJson(backendResponse).toString)
         
         val response  = route(app, validPublishRequest).get
-        status(response) mustBe 200
-        contentAsString(response) mustBe """{"isSuccess":false,"errors":[{"code":10000,"message":"Some Error Message"}]}"""
+        status(response) mustBe 400
+        contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
   
       }
 
@@ -148,7 +148,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         
         val response  = route(app, invalidPublishRequest).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"code":"BAD_REQUEST","message":"selectedFile is missing from requestBody"}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"selectedFile is missing from requestBody"}]}"""
       }
 
        "respond with 400 when invalid platform header" in new Setup {
@@ -159,7 +159,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
          
           val response  = route(app, request).get
           status(response) mustBe BAD_REQUEST
-          contentAsString(response) mustBe """{"code":"BAD_REQUEST","message":"platform header is missing or invalid"}"""
+          contentAsString(response) mustBe """{"errors":[{"message":"platform header is missing or invalid"}]}"""
          
        }
 
@@ -172,7 +172,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
          
         val response  = route(app, request).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"code":"BAD_REQUEST","message":"specification type header is missing or invalid"}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"specification type header is missing or invalid"}]}"""
          
 
       }
@@ -186,7 +186,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
          
         val response  = route(app, request).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"code":"BAD_REQUEST","message":"publisher reference header is missing or invalid"}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"publisher reference header is missing or invalid"}]}"""
 
       }
 

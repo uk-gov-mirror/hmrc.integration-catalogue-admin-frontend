@@ -24,7 +24,7 @@ paths:
         Create or updates an API with the POSTed OAS specification.
       parameters:
         - in: header
-          name: x-platform
+          name: x-platform-type
           description: Must be specified in either this header or the OAS file
           required: false
           schema:

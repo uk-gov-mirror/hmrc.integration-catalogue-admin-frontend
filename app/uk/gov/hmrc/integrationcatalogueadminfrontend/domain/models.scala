@@ -22,6 +22,7 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 
 import java.util.UUID
+import play.api.libs.json.JsArray
 
 case class IntegrationId(value: UUID) extends AnyVal
 
@@ -53,24 +54,11 @@ object SpecificationType extends Enum[SpecificationType] with PlayJsonEnum[Speci
 
 }
 
-object ErrorCode extends Enumeration {
-  type ErrorCode = Value
-  val ACCEPT_HEADER_INVALID = Value("ACCEPT_HEADER_INVALID")
-  val BAD_REQUEST = Value("BAD_REQUEST")
-  val FORBIDDEN = Value("FORBIDDEN")
-  val INVALID_ACCEPT_HEADER = Value("INVALID_ACCEPT_HEADER")
-  val INVALID_CONTENT_TYPE =Value("INVALID_CONTENT_TYPE")
-  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
-  val NOT_FOUND = Value("NOT_FOUND")
-  val UNAUTHORISED = Value("UNAUTHORISED")
-  val UNKNOWN_ERROR = Value("UNKNOWN_ERROR")
 
-}
+case class PublishResponse(id: IntegrationId, publisherReference: String, platformType: PlatformType)
 
-object JsErrorResponse {
-  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
- Json.obj(
-      "code" -> errorCode.toString,
-      "message" -> message
-    )
-}
+
+
+case class ErrorResponseMessage(message: String)
+case class ErrorResponse(errors: List[ErrorResponseMessage])
+

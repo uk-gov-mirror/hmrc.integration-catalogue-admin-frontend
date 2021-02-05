@@ -31,6 +31,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -39,6 +40,7 @@ import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import play.api.libs.json.Json
 
 class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
 
@@ -111,7 +113,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
          List.empty)), validHeaders, "selectedFile", "text.txt")
 
        result shouldBeResult CREATED
-       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"isUpdate":false,"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
+       contentAsString(result) shouldBe raw"""{"id":"$id","publisherReference":"123456","platformType":"CORE_IF"}"""
      }
 
    "return 200 when valid payload is sent" in new Setup{
@@ -122,16 +124,15 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
          List.empty)), validHeaders, "selectedFile", "text.txt")
 
        result shouldBeResult OK
-       contentAsString(result) shouldBe raw"""{"isSuccess":true,"publishDetails":{"isUpdate":true,"integrationId":"$id","publisherReference":"123456","platformType":"CORE_IF"},"errors":[]}"""
+       contentAsString(result) shouldBe raw"""{"id":"$id","publisherReference":"123456","platformType":"CORE_IF"}"""
      }
 
     "return 200 when valid payload is sent but publish fails" in new Setup{
      val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = false, None, List(PublishError(123, "some message")))),
       validHeaders, "selectedFile", "text.txt")
 
-
-      result shouldBeResult OK
-      contentAsString(result) shouldBe "{\"isSuccess\":false,\"errors\":[{\"code\":123,\"message\":\"some message\"}]}"
+      result shouldBeResult BAD_REQUEST
+      contentAsString(result) shouldBe """{"errors":[{"message":"some message"}]}"""
     }
 
      "return 400 and not call connector when invalid file" in new Setup{
@@ -139,8 +140,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       val result: Future[Result] =  callPublish(None, validHeaders, "CANT FIND ME", "text3.txt")
 
-
-       contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"selectedFile is missing from requestBody\"}"
+       contentAsString(result) shouldBe """{"errors":[{"message":"selectedFile is missing from requestBody"}]}"""
        result shouldBeResult BAD_REQUEST
 
        verifyZeroInteractions(mockPublishService)
@@ -151,7 +151,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid")
+      val jsErrorResponse: JsObject =  Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "platform header is missing or invalid"))))
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -164,7 +164,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid")
+      val jsErrorResponse = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "platform header is missing or invalid"))))
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -174,7 +174,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type header is missing or invalid")
+      val jsErrorResponse: JsObject =  Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "specification type header is missing or invalid"))))
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -188,7 +188,8 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type header is missing or invalid")
+      val jsErrorResponse: JsObject =  Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "specification type header is missing or invalid"))))
+
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -200,7 +201,9 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       status(result) shouldBe BAD_REQUEST
 
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid")
+
+      val jsErrorResponse: JsObject =  Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "publisher reference header is missing or invalid"))))
+
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -213,7 +216,8 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject =  JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid")
+       val jsErrorResponse: JsObject =  Json.toJsObject(ErrorResponse(List(ErrorResponseMessage( "publisher reference header is missing or invalid"))))
+
       contentAsJson(result) shouldBe jsErrorResponse
     }
 

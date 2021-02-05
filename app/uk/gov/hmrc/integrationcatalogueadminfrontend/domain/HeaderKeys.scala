@@ -17,8 +17,8 @@
 package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
 
 object HeaderKeys{
-val platformKey: String = "x-platformType"
-val specificationTypeKey: String = "x-specificationType"
-val publisherRefKey: String = "x-publisherRef"
+val platformKey: String = "x-platform-type"
+val specificationTypeKey: String = "x-specification-type"
+val publisherRefKey: String = "x-publisher-reference"
 
 }

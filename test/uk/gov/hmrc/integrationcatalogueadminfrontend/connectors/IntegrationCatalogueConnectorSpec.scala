@@ -69,7 +69,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       val request: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
-      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platform)), List.empty))
+      httpCallWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platformType)), List.empty))
 
 
       val result: PublishResult = Await.result(connector.publish(request), 500 millis)

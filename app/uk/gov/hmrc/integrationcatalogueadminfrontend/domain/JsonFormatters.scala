@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
+package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
 
 import play.api.libs.json.Json
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.PublishResponse
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.{ErrorResponse, ErrorResponseMessage}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRequest
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishError
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishDetails
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishResult
+
 
 object JsonFormatters {
   implicit val publishRequestFormat = Json.format[PublishRequest]
   implicit val publishErrorFormat = Json.format[PublishError]
   implicit val publishDetailsFormat = Json.format[PublishDetails]
   implicit val publishResultFormat = Json.format[PublishResult]
+
+  implicit val publishResponseFormat = Json.format[PublishResponse]
+  implicit val errorResponseMessageFormat = Json.format[ErrorResponseMessage]
+  implicit val errorResponseFormat = Json.format[ErrorResponse]
 }

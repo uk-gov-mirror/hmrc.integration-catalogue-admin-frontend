@@ -24,13 +24,15 @@ import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishDetails
+import uk.gov.hmrc.govukfrontend.views.viewmodels.errormessage.ErrorMessage
 
 @Singleton
 class PublishController @Inject()(
@@ -60,7 +62,7 @@ class PublishController @Inject()(
           request.body.file("selectedFile") match {
             case None => {
               logger.info("selectedFile is missing from requestBody")
-              Future.successful(BadRequest(Json.toJson(JsErrorResponse(ErrorCode.BAD_REQUEST, "selectedFile is missing from requestBody"))))
+              Future.successful(BadRequest(Json.toJson(ErrorResponse( List(ErrorResponseMessage( "selectedFile is missing from requestBody"))))))
             }
             case Some(selectedFile) => 
             {
@@ -71,17 +73,23 @@ class PublishController @Inject()(
               bufferedSource.close()
               publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
               .map(result => {
-                val resultAsJson = Json.toJson(result)
+             
                 result.publishDetails match {
-                  case Some(details) =>  if(details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)                         
-                  case None =>  Ok(resultAsJson)
+                  case Some(details) =>  
+                    val resultAsJson = Json.toJson(PublishDetails.toPublishResponse(details))
+                    if(details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)                         
+                  case None =>  if(result.errors.nonEmpty){
+                      BadRequest(Json.toJson(ErrorResponse(result.errors.map(x => ErrorResponseMessage(x.message)))))
+                    } else {
+                      BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "selectedFile is missing from requestBody")))))
+                    }   
                 }
             })
                                       }
           }
         case _ => {
           logger.info("invalid header(s) provided")
-          Future.successful(BadRequest(Json.toJson(JsErrorResponse(ErrorCode.BAD_REQUEST, "Please provide valid headers"))))
+          Future.successful(BadRequest(Json.toJson(ErrorResponse( List(ErrorResponseMessage( "Please provide valid headers"))))))
         }
       }
 

@@ -26,6 +26,8 @@ import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
+import play.api.libs.json.Json
 
 
 @Singleton
@@ -41,7 +43,7 @@ class ValidateSpecificationTypeHeaderAction @Inject()(appConfig: AppConfig)(impl
      if (specType.nonEmpty && validateSpecificationType(specType)) Future.successful(None)
      else {
        logger.info("Invalid specification type header provided")
-       Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "specification type header is missing or invalid"))))
+       Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "specification type header is missing or invalid")))))))
      }
   
   }

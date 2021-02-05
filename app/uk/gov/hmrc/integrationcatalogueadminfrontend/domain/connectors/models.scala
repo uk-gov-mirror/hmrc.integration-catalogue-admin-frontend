@@ -21,7 +21,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
 
 
 
-case class PublishRequest(publisherReference: String, platform: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
+case class PublishRequest(publisherReference: String, platformType: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
 
 case class PublishError(code: Int, message: String)
 
@@ -29,3 +29,8 @@ case class PublishDetails(isUpdate: Boolean, integrationId: IntegrationId, publi
 
 case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetails], errors: List[PublishError] = List.empty)
 
+object PublishDetails{
+    def toPublishResponse(details: PublishDetails) = {
+        PublishResponse(details.integrationId, details.publisherReference, details.platformType)
+    }
+}

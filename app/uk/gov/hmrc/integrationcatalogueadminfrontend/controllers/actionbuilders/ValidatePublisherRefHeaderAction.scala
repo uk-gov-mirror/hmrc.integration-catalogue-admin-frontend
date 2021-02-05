@@ -26,6 +26,8 @@ import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
+import play.api.libs.json.Json
 
 @Singleton
 class ValidatePublisherRefHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: ExecutionContext)
@@ -40,7 +42,7 @@ class ValidatePublisherRefHeaderAction @Inject()(appConfig: AppConfig)(implicit 
      if (publisherRef.nonEmpty) Future.successful(None)
      else {
        logger.info("Invalid publisher reference header Provided")
-       Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "publisher reference header is missing or invalid"))))
+       Future.successful(Some( BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "publisher reference header is missing or invalid")))))))
      }
   
   }

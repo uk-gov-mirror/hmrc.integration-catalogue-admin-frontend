@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import play.api.Logging
 
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.JsonFormatters._
+import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
 
 @Singleton

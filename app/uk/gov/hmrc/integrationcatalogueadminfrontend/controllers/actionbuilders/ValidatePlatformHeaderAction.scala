@@ -26,6 +26,8 @@ import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
+import play.api.libs.json.Json
 
 
 @Singleton
@@ -41,7 +43,7 @@ class ValidatePlatformHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: 
      if (platformType.nonEmpty && validatePlatformType(platformType)) Future.successful(None)
      else {
        logger.info("Invalid platform header provided")
-       Future.successful(Some(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "platform header is missing or invalid"))))
+       Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "platform header is missing or invalid")))))))
      }
   
   }
