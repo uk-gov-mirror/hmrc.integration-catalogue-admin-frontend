@@ -21,12 +21,25 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 
 trait IntegrationCatalogueService {
   val publishUrl = "/integration-catalogue/apis/publish"
+  val getApisUrl = "/integration-catalogue/apis"
 
 
 
-  def primeIntegrationCatalogueServiceWithBody(status : Int, responseBody : String)= {
+  def primeIntegrationCatalogueServicePutWithBody(status : Int, responseBody : String)= {
 
       stubFor(put(urlEqualTo(publishUrl))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(responseBody)
+      )
+    )
+  }
+
+  def primeIntegrationCatalogueServiceGetWithBody(status : Int, responseBody : String)= {
+
+    stubFor(get(urlEqualTo(getApisUrl))
       .willReturn(
         aResponse()
           .withStatus(status)

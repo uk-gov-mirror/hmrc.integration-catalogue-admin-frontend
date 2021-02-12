@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
-
-import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import play.api.libs.json.Json.JsValueWrapper
-import play.api.libs.json.JsObject
-import play.api.libs.json.Json
+package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common
 
 import java.util.UUID
-import play.api.libs.json.JsArray
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 case class IntegrationId(value: UUID) extends AnyVal
 
@@ -31,7 +26,14 @@ object IntegrationId {
   implicit val apiIdFormat = Json.valueFormat[IntegrationId]
 }
 
-sealed trait PlatformType extends EnumEntry
+case class ResourceId(value: UUID) extends AnyVal
+
+object ResourceId {
+  import play.api.libs.json.Json
+  implicit val apiIdFormat = Json.valueFormat[ResourceId]
+}
+
+sealed trait PlatformType extends EnumEntry 
 
 object PlatformType extends Enum[PlatformType] with PlayJsonEnum[PlatformType] {
 
@@ -51,14 +53,25 @@ object SpecificationType extends Enum[SpecificationType] with PlayJsonEnum[Speci
 
   case object OAS_V3   extends SpecificationType
 
+}
+
+case class ContactInformation(name: String, emailAddress: String)
+
+case class Maintainer(name: String, slackChannel: String, contactInfo: List[ContactInformation] = List.empty)
+
+
+sealed trait MessageType extends EnumEntry 
+
+object MessageType extends Enum[MessageType] with PlayJsonEnum[MessageType] {
+
+  val values = findValues
+
+  case object JSON   extends MessageType
+  case object XML extends MessageType
 
 }
 
-
 case class PublishResponse(id: IntegrationId, publisherReference: String, platformType: PlatformType)
-
-
 
 case class ErrorResponseMessage(message: String)
 case class ErrorResponse(errors: List[ErrorResponseMessage])
-

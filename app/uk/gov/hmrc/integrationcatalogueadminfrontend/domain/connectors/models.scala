@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors
 
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common._
 
 
 

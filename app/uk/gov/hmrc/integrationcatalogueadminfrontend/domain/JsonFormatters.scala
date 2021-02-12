@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
 
-import play.api.libs.json.Json
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.PublishResponse
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.{ErrorResponse, ErrorResponseMessage}
+import play.api.libs.json._
+import play.api.libs.json.JodaReads._
+import play.api.libs.json.JodaWrites._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.{ContactInformation, ErrorResponse, ErrorResponseMessage, Maintainer, PublishResponse}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRequest
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishError
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishDetails
@@ -34,4 +35,20 @@ object JsonFormatters {
   implicit val publishResponseFormat = Json.format[PublishResponse]
   implicit val errorResponseMessageFormat = Json.format[ErrorResponseMessage]
   implicit val errorResponseFormat = Json.format[ErrorResponse]
+
+  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
+  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
+  implicit val JodaDateTimeFormat: Format[org.joda.time.DateTime] = Format(JodaDateReads, JodaDateWrites)
+
+  implicit val formatContactInformation : Format[ContactInformation] = Json.format[ContactInformation]
+  
+  implicit val formatMaintainer : Format[Maintainer] = Json.format[Maintainer]
+
+  implicit val exampleFormats: OFormat[Example] = Json.format[Example]
+
+  implicit val endpointFormats: OFormat[Endpoint] = Json.format[Endpoint]
+
+   implicit val formatApiDetail : Format[ApiDetail] = Json.format[ApiDetail]
+
 }

@@ -41,6 +41,10 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import play.api.libs.json.Json
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.PlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.IntegrationId
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponse
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponseMessage
 
 class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
 
@@ -84,7 +88,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
               filePartKey: String,
               fileName: String): Future[Result] = {
      expectedConnectorResponse.map(response =>
-        when(mockPublishService.publishApi(*, *, *, *, *)(*)).thenReturn(Future.successful(response))
+        when(mockPublishService.publishApi(*, *, *, *, *)(*)).thenReturn(Future.successful(Right(response)))
      )
 
       val tempFile = SingletonTemporaryFileCreator.create("text","txt")

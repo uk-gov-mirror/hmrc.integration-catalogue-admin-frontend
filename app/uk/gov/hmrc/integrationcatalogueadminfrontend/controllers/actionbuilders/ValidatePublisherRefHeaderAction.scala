@@ -25,9 +25,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common._
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import play.api.libs.json.Json
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
 
 @Singleton
 class ValidatePublisherRefHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: ExecutionContext)

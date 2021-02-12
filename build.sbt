@@ -32,6 +32,7 @@ lazy val microservice = Project(appName, file("."))
     majorVersion                     := 0,
     scalaVersion                     := "2.12.12",
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
+    Test / unmanagedSourceDirectories += baseDirectory(_ / "test-common").value,
     TwirlKeys.templateImports ++= Seq(
       "uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig",
       "uk.gov.hmrc.govukfrontend.views.html.components._",
@@ -57,6 +58,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(inConfig(IntegrationTest)(BloopDefaults.configSettings))
   .settings(resolvers += Resolver.jcenterRepo) 
   .settings(unmanagedResourceDirectories in IntegrationTest += (baseDirectory in IntegrationTest).value / "it" / "resources")
+  .settings(unmanagedSourceDirectories in IntegrationTest += (baseDirectory in IntegrationTest).value / "test-common")
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
 
 lazy val scoverageSettings = {

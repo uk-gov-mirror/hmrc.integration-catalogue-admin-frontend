@@ -27,6 +27,9 @@ import play.api.Logging
 
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.NotFoundException
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -34,12 +37,26 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
 
   private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
-  def publish(publishRequest: PublishRequest)(implicit hc: HeaderCarrier): Future[PublishResult] = {
+  def publish(publishRequest: PublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
     http.PUT[PublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
+    .map(x=> Right(x))
     .recover {
-      case NonFatal(e) => throw new RuntimeException(s"Unexpected response from $externalServiceUri: ${e.getMessage}")
+      case NonFatal(e) => handleAndLogError(e)
     }
   }
 
 
+  def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]] = {
+    http.GET[List[ApiDetail]](s"$externalServiceUri/apis")
+    .map(x=> Right(x))
+    .recover {
+      case NonFatal(e) => handleAndLogError(e)
+    }
+  }
+
+
+ private  def handleAndLogError(error: Throwable)={
+      logger.error(error.getMessage())
+      Left(error)
+  }
 }

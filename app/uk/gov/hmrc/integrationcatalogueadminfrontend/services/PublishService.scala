@@ -17,19 +17,23 @@
 package uk.gov.hmrc.integrationcatalogueadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.SpecificationType
+
 import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.PlatformType
+
 import scala.concurrent.ExecutionContext
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRequest
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.PlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.SpecificationType
+import scala.concurrent.Future
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishResult
 
 
 @Singleton
 class PublishService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector)(implicit ec: ExecutionContext){
     
     def publishApi(publisherRef: String, platformType: PlatformType, fileName: String, specType: SpecificationType, contents: String)
-    (implicit hc: HeaderCarrier) ={
+    (implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]]  ={
          integrationCatalogueConnector.publish(PublishRequest(publisherRef, platformType, fileName, specType, contents))
     }
 }

@@ -32,6 +32,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.IntegrationId
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.PlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.SpecificationType
 
 class PublishServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar  {
 
@@ -41,17 +44,21 @@ private implicit val hc: HeaderCarrier = HeaderCarrier()
 trait SetUp {
     val objInTest = new PublishService(mockIntegrationCatalogueConnector)
     val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents")
-    val publishResult: PublishResult =
+    val expectedPublishResult: PublishResult =
       PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 }
 
 "publishApi" should {
   "return value from connector" in new SetUp {
-    when(mockIntegrationCatalogueConnector.publish(eqTo(publishRequest))(*)).thenReturn(Future.successful(publishResult))
+    when(mockIntegrationCatalogueConnector.publish(eqTo(publishRequest))(*)).thenReturn(Future.successful(Right(expectedPublishResult)))
 
-    val result: PublishResult =
+    val result: Either[Throwable, PublishResult] =
       Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents"), 500 millis)
-    result shouldBe publishResult
+
+    result match {
+      case Left(_) => fail()
+      case Right(publishResult: PublishResult) => publishResult shouldBe expectedPublishResult
+    }
 
     verify(mockIntegrationCatalogueConnector).publish(eqTo(publishRequest))(eqTo(hc))
   }

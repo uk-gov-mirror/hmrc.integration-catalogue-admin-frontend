@@ -23,7 +23,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -33,6 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishDetails
 import uk.gov.hmrc.govukfrontend.views.viewmodels.errormessage.ErrorMessage
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
 
 @Singleton
 class PublishController @Inject()(
@@ -64,7 +65,7 @@ class PublishController @Inject()(
               logger.info("selectedFile is missing from requestBody")
               Future.successful(BadRequest(Json.toJson(ErrorResponse( List(ErrorResponseMessage( "selectedFile is missing from requestBody"))))))
             }
-            case Some(selectedFile) => 
+            case Some(selectedFile) =>
             {
               val convertedPlatformType = PlatformType.withNameInsensitive(platformType)
               val convertedSpecType = SpecificationType.withNameInsensitive(specificationType)
@@ -73,17 +74,25 @@ class PublishController @Inject()(
               bufferedSource.close()
               publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
               .map(result => {
-             
-                result.publishDetails match {
-                  case Some(details) =>  
-                    val resultAsJson = Json.toJson(PublishDetails.toPublishResponse(details))
-                    if(details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)                         
-                  case None =>  if(result.errors.nonEmpty){
-                      BadRequest(Json.toJson(ErrorResponse(result.errors.map(x => ErrorResponseMessage(x.message)))))
-                    } else {
-                      BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "selectedFile is missing from requestBody")))))
-                    }   
+
+                result match {
+                    case Right(publishResult) => {
+                       publishResult.publishDetails match {
+                          case Some(details) =>  
+                            val resultAsJson = Json.toJson(PublishDetails.toPublishResponse(details))
+                            if(details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)
+                          case None =>  if(publishResult.errors.nonEmpty){
+                              BadRequest(Json.toJson(ErrorResponse(publishResult.errors.map(x => ErrorResponseMessage(x.message)))))
+                            } else {
+                              BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "selectedFile is missing from requestBody")))))
+                            }
+                        }
+                    }
+                    case Left(errorResult) => 
+                    BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unexpected response from /integration-catalogue: ${errorResult.getMessage}")))))
                 }
+             
+               
             })
                                       }
           }

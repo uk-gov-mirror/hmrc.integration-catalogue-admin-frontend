@@ -17,7 +17,8 @@ object AppDependencies {
     "com.fasterxml.jackson.core" % "jackson-core" % "2.11.1",
     "com.fasterxml.jackson.core" % "jackson-annotations" % "2.11.1",
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.11.1",
-    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.11.1"
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.11.1",
+    "com.typesafe.play"                 %% "play-json-joda"                 % "2.9.2"
   )
 
   val test = Seq(

@@ -2,3 +2,8 @@
 
 # publish
 POST      /apis/publish              uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
+
+
+#api
+
+GET     /apis                       uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.ApiController.getAllApis()
