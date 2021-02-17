@@ -26,9 +26,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ApiService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector)(implicit ec: ExecutionContext){
-    
-    def getAllApis()
-    (implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]]  ={
+
+  def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier) : Future[Boolean] = {
+    integrationCatalogueConnector.deleteByPublisherReference(publisherReference)
+  }
+
+  def getAllApis()
+    (implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]] = {
          integrationCatalogueConnector.getAll()
     }
 }

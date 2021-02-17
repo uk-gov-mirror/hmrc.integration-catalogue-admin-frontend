@@ -22,10 +22,11 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 trait IntegrationCatalogueService {
   val publishUrl = "/integration-catalogue/apis/publish"
   val getApisUrl = "/integration-catalogue/apis"
+  def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/apis/$publisherReference"
 
 
 
-  def primeIntegrationCatalogueServicePutWithBody(status : Int, responseBody : String)= {
+  def primeIntegrationCatalogueServicePutWithBody(status : Int, responseBody : String) = {
 
       stubFor(put(urlEqualTo(publishUrl))
       .willReturn(
@@ -37,7 +38,7 @@ trait IntegrationCatalogueService {
     )
   }
 
-  def primeIntegrationCatalogueServiceGetWithBody(status : Int, responseBody : String)= {
+  def primeIntegrationCatalogueServiceGetWithBody(status : Int, responseBody : String) = {
 
     stubFor(get(urlEqualTo(getApisUrl))
       .willReturn(
@@ -45,6 +46,17 @@ trait IntegrationCatalogueService {
           .withStatus(status)
           .withHeader("Content-Type","application/json")
           .withBody(responseBody)
+      )
+    )
+  }
+
+  def primeIntegrationCatalogueServiceDelete(publisherReference: String, status : Int) = {
+
+    stubFor(delete(urlEqualTo(deleteApiUrl(publisherReference)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
       )
     )
   }

@@ -16,50 +16,54 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.services
 
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.mockito.scalatest.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogueadminfrontend.AwaitTestSupport
 import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
+class ApiServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport {
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
+  val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
-import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
-import uk.gov.hmrc.integrationcatalogueadminfrontend.AwaitTestSupport
-
-class ApiServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport{
-
-val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
-private implicit val hc: HeaderCarrier = HeaderCarrier()
-
-trait SetUp {
+  trait SetUp {
     val objInTest = new ApiService(mockIntegrationCatalogueConnector)
-   
-}
+    val examplePublisherReference = "example-publisher-reference"
 
-"getAllApis" should {
-  "return error from connector" in new SetUp {
-    when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+  }
 
-    val result: Either[Throwable, List[ApiDetail]] =
-      await(objInTest.getAllApis())
+  "deleteByPublisherReference" should {
+    "return true from connector when deletion successful" in new SetUp {
+      when(mockIntegrationCatalogueConnector.deleteByPublisherReference(*)(*)).thenReturn(Future.successful(true))
+      val result = await(objInTest.deleteByPublisherReference(examplePublisherReference))
+      result shouldBe true
+    }
+  }
 
-    result match {
-      case Left(_) => succeed
-      case Right(_) => fail()
+  "getAllApis" should {
+    "return error from connector" in new SetUp {
+      when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+
+      val result: Either[Throwable, List[ApiDetail]] =
+        await(objInTest.getAllApis())
+
+      result match {
+        case Left(_) => succeed
+        case Right(_) => fail()
+      }
+
+      verify(mockIntegrationCatalogueConnector).getAll()(eqTo(hc))
     }
 
-    verify(mockIntegrationCatalogueConnector).getAll()(eqTo(hc))
-  }
-  
-  
-  "return apis from connector" in new SetUp {
+
+    "return apis from connector" in new SetUp {
       val expectedResult = List(exampleApiDetail, exampleApiDetail2)
       when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Right(expectedResult)))
 
@@ -70,6 +74,6 @@ trait SetUp {
         case Right(allApisResult: List[ApiDetail]) => allApisResult shouldBe expectedResult
       }
     }
-}
+  }
 
 }

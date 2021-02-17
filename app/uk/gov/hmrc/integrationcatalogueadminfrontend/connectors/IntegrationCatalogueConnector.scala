@@ -30,6 +30,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishR
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.http.NotFoundException
+import play.api.http.Status._
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -45,7 +46,6 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
     }
   }
 
-
   def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]] = {
     http.GET[List[ApiDetail]](s"$externalServiceUri/apis")
     .map(x=> Right(x))
@@ -54,8 +54,18 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
     }
   }
 
+  def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    http.DELETE(s"$externalServiceUri/apis/$publisherReference")
+      .map(_.status == NO_CONTENT)
+      .recover {
+        case NonFatal(e) => {
+          logger.error(e.getMessage())
+          false
+        }
+      }
+  }
 
- private  def handleAndLogError(error: Throwable)={
+ private  def handleAndLogError(error: Throwable) = {
       logger.error(error.getMessage())
       Left(error)
   }
