@@ -99,6 +99,7 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
 
         val response: Future[Result] = route(app, validDeleteApiRequest(examplePublisherReference)).get
         status(response) mustBe NOT_FOUND
+        contentAsString(response) mustBe """{"errors":[{"message":"The requested resource could not be found."}]}"""
       }
     }
   }

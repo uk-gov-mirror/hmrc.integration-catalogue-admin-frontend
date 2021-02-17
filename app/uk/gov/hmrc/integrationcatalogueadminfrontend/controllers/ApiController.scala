@@ -53,7 +53,7 @@ class ApiController @Inject()(appConfig: AppConfig,
   def deleteByPublisherReference(publisherReference: String) : Action[AnyContent] = Action.async { implicit request =>
     apiService.deleteByPublisherReference(publisherReference).map {
       case true => NoContent
-      case false => NotFound
+      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"The requested resource could not be found.")))))
     }
   }
 }
