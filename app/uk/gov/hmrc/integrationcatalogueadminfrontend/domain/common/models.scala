@@ -39,9 +39,10 @@ object PlatformType extends Enum[PlatformType] with PlayJsonEnum[PlatformType] {
 
   val values = findValues
 
+  case object DES  extends PlatformType
   case object CORE_IF   extends PlatformType
   case object API_PLATFORM extends PlatformType
-  case object CORE_IF_FILE_TRANSFER_FLOW      extends PlatformType
+  case object CORE_IF_FILE_TRANSFER_FLOW     extends PlatformType
 
 }
 
