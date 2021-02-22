@@ -21,7 +21,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common._
 
 
 
-case class PublishRequest(publisherReference: String, platformType: PlatformType, fileName: String, specificationType: SpecificationType, contents: String)
+case class PublishRequest(publisherReference: String, platformType: PlatformType, specificationType: SpecificationType, contents: String)
 
 case class PublishError(code: Int, message: String)
 

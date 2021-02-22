@@ -88,7 +88,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
               filePartKey: String,
               fileName: String): Future[Result] = {
      expectedConnectorResponse.map(response =>
-        when(mockPublishService.publishApi(*, *, *, *, *)(*)).thenReturn(Future.successful(Right(response)))
+        when(mockPublishService.publishApi(*, *, *, *)(*)).thenReturn(Future.successful(Right(response)))
      )
 
       val tempFile = SingletonTemporaryFileCreator.create("text","txt")

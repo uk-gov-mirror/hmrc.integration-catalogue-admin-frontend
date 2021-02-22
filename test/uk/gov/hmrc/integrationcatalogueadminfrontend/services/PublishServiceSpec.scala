@@ -43,7 +43,7 @@ private implicit val hc: HeaderCarrier = HeaderCarrier()
 
 trait SetUp {
     val objInTest = new PublishService(mockIntegrationCatalogueConnector)
-    val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents")
+    val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "contents")
     val expectedPublishResult: PublishResult =
       PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 }
@@ -53,7 +53,7 @@ trait SetUp {
     when(mockIntegrationCatalogueConnector.publish(eqTo(publishRequest))(*)).thenReturn(Future.successful(Right(expectedPublishResult)))
 
     val result: Either[Throwable, PublishResult] =
-      Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, "fileName", SpecificationType.OAS_V3, "contents"), 500 millis)
+      Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "contents"), 500 millis)
 
     result match {
       case Left(_) => fail()

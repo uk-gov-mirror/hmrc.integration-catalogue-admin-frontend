@@ -32,9 +32,9 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRe
 @Singleton
 class PublishService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector)(implicit ec: ExecutionContext){
     
-    def publishApi(publisherRef: String, platformType: PlatformType, fileName: String, specType: SpecificationType, contents: String)
+    def publishApi(publisherRef: String, platformType: PlatformType, specType: SpecificationType, contents: String)
     (implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]]  ={
-         integrationCatalogueConnector.publish(PublishRequest(publisherRef, platformType, fileName, specType, contents))
+         integrationCatalogueConnector.publish(PublishRequest(publisherRef, platformType, specType, contents))
     }
 }
 

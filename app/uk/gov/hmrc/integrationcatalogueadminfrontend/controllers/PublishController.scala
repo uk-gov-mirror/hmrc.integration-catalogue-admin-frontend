@@ -72,7 +72,7 @@ class PublishController @Inject()(
               val bufferedSource = Source.fromFile(selectedFile.ref.path.toFile)
               val fileContents = bufferedSource.getLines.mkString("\r\n")
               bufferedSource.close()
-              publishService.publishApi(publisherRef, convertedPlatformType, selectedFile.filename, convertedSpecType, fileContents)
+              publishService.publishApi(publisherRef, convertedPlatformType, convertedSpecType, fileContents)
               .map(result => {
 
                 result match {
