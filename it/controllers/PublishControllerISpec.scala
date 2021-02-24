@@ -29,9 +29,10 @@ import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, _}
 import support.{IntegrationCatalogueService, ServerBaseISpec}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.{IntegrationId, PlatformType}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
+import uk.gov.hmrc.integrationcatalogue.models.common._
+import uk.gov.hmrc.integrationcatalogue.models._
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+
 import utils.MultipartFormDataWritable
 
 import java.io.{FileOutputStream, InputStream}
@@ -72,7 +73,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
     val multipartBody: MultipartFormData[TemporaryFile] = MultipartFormData[TemporaryFile](dataParts = Map.empty, files = Seq(filePart), badParts = Nil)
 
-    val validPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.POST, "/integration-catalogue-admin-frontend/services/apis/publish", headers, multipartBody)
+    val validPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, multipartBody)
 
 
     val invalidFilePart =
@@ -86,15 +87,8 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       MultipartFormData[TemporaryFile](dataParts = Map.empty, files = Seq(invalidFilePart), badParts = Nil)
 
     val invalidPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] =
-      FakeRequest(Helpers.POST, "/integration-catalogue-admin-frontend/services/apis/publish", headers, invalidMultipartBody)
+      FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, invalidMultipartBody)
 
-    def callPostEndpoint(url: String, body: String, headers: List[(String, String)]): WSResponse =
-      wsClient
-        .url(url)
-        .withHttpHeaders(headers: _*)
-        .withFollowRedirects(false)
-        .post(body)
-        .futureValue
 
     def createBackendPublishResponse(isSuccess: Boolean, isUpdate: Boolean): PublishResult = {
         val publishDetails = if(isSuccess) Some(PublishDetails(isUpdate, IntegrationId(UUID.randomUUID()), "", PlatformType.CORE_IF)) else None
@@ -113,7 +107,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
   "PublishController" when {
 
-    "POST /services/api/publish" should {
+    "PUT /services/api/publish" should {
 
       "respond with 201 when valid request and a create" in new Setup{
 

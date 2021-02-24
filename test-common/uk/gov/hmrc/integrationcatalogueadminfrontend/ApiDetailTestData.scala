@@ -19,10 +19,8 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.data
 import java.util.UUID
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.{IntegrationId, Maintainer, MessageType, PlatformType, ResourceId, SpecificationType}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.Example
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.Endpoint
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
+import uk.gov.hmrc.integrationcatalogue.models.common._
+import uk.gov.hmrc.integrationcatalogue.models._
 
 trait ApiDetailTestData {
 
@@ -48,7 +46,7 @@ trait ApiDetailTestData {
   val exampleApiDetail: ApiDetail = ApiDetail(
     IntegrationId(UUID.fromString("e2e4ce48-29b0-11eb-adc1-0242ac120002")),
     publisherReference = "API1689",
-    name = "getKnownFactsName",
+    title = "getKnownFactsName",
     description = "getKnownFactsDesc",
     lastUpdated = dateValue,
     platform = PlatformType.CORE_IF,
@@ -64,7 +62,7 @@ trait ApiDetailTestData {
   val exampleApiDetail2 = ApiDetail(
     IntegrationId(UUID.fromString("28c0bd67-4176-42c7-be13-53be98a4db58")),
     publisherReference = "API1676",
-    name = "getOtherFactsName",
+    title = "getOtherFactsName",
     description = "getOtherFactsDesc",
     lastUpdated = dateValue,
     platform = PlatformType.CORE_IF,

@@ -17,22 +17,22 @@
 package uk.gov.hmrc.integrationcatalogueadminfrontend.services
 
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogue.models.IntegrationResponse
 import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 
 @Singleton
-class ApiService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector)(implicit ec: ExecutionContext){
+class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector){
 
   def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier) : Future[Boolean] = {
     integrationCatalogueConnector.deleteByPublisherReference(publisherReference)
   }
 
-  def getAllApis()
-    (implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]] = {
+  def getAllIntegrations()
+    (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
          integrationCatalogueConnector.getAll()
     }
 }

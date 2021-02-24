@@ -1,9 +1,9 @@
 # services routes
 
 # publish
-POST            /apis/publish                   uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
+PUT            /apis/publish                   uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
 
 
 #api
-GET            /apis                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.ApiController.getAllApis()
-DELETE         /apis/:publisherReference        uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.ApiController.deleteByPublisherReference(publisherReference: String)
+GET            /integrations                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.getAllIntegrations()
+DELETE         /integrations/:publisherReference        uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.deleteByPublisherReference(publisherReference: String)

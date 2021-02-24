@@ -18,40 +18,32 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, PlayBodyParsers}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage}
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.services.ApiService
+import uk.gov.hmrc.integrationcatalogueadminfrontend.services.IntegrationService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponseMessage
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponse
 
 
 @Singleton
-class ApiController @Inject()(appConfig: AppConfig,
-                              apiService: ApiService,
-                               mcc: MessagesControllerComponents,
-                               playBodyParsers: PlayBodyParsers)
-                                 (implicit ec: ExecutionContext)
-  extends FrontendController(mcc) with Logging {
+class IntegrationController @Inject()(appConfig: AppConfig, integrationService: IntegrationService, mcc: MessagesControllerComponents)
+                                 (implicit ec: ExecutionContext) extends FrontendController(mcc) with Logging {
 
   implicit val config: AppConfig = appConfig
 
-
- def getAllApis: Action[AnyContent] = Action.async { implicit request =>
-    apiService.getAllApis() map {
+ def getAllIntegrations: Action[AnyContent] = Action.async { implicit request =>
+    integrationService.getAllIntegrations() map {
       case Right(response) => Ok(Json.toJson(response))
       case Left(error: Throwable)  =>  BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"error integration-catalogue ${error.getMessage}")))))
     }
-
  }
 
-
   def deleteByPublisherReference(publisherReference: String) : Action[AnyContent] = Action.async { implicit request =>
-    apiService.deleteByPublisherReference(publisherReference).map {
+    integrationService.deleteByPublisherReference(publisherReference).map {
       case true => NoContent
       case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"The requested resource could not be found.")))))
     }

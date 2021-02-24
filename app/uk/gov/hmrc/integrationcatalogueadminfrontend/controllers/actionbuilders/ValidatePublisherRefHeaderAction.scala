@@ -25,8 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
 import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common._
-import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
+import _root_.uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import _root_.uk.gov.hmrc.integrationcatalogue.models._
 import play.api.libs.json.Json
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
 

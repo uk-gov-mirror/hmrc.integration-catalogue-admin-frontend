@@ -21,8 +21,8 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 
 trait IntegrationCatalogueService {
   val publishUrl = "/integration-catalogue/apis/publish"
-  val getApisUrl = "/integration-catalogue/apis"
-  def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/apis/$publisherReference"
+  val getApisUrl = "/integration-catalogue/integrations"
+  def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/integrations/$publisherReference"
 
 
 

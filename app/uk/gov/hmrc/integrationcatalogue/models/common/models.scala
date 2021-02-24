@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common
+package uk.gov.hmrc.integrationcatalogue.models.common
 
 import java.util.UUID
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+import scala.collection.immutable
 
 case class IntegrationId(value: UUID) extends AnyVal
 
@@ -26,23 +27,16 @@ object IntegrationId {
   implicit val apiIdFormat = Json.valueFormat[IntegrationId]
 }
 
-case class ResourceId(value: UUID) extends AnyVal
-
-object ResourceId {
-  import play.api.libs.json.Json
-  implicit val apiIdFormat = Json.valueFormat[ResourceId]
-}
-
-sealed trait PlatformType extends EnumEntry 
+sealed trait PlatformType extends EnumEntry
 
 object PlatformType extends Enum[PlatformType] with PlayJsonEnum[PlatformType] {
 
   val values = findValues
 
-  case object DES  extends PlatformType
-  case object CORE_IF   extends PlatformType
+  case object DES extends PlatformType
+  case object CORE_IF extends PlatformType
   case object API_PLATFORM extends PlatformType
-  case object CORE_IF_FILE_TRANSFER_FLOW     extends PlatformType
+  case object CORE_IF_FILE_TRANSFER_FLOW extends PlatformType
 
 }
 
@@ -52,7 +46,7 @@ object SpecificationType extends Enum[SpecificationType] with PlayJsonEnum[Speci
 
   val values = findValues
 
-  case object OAS_V3   extends SpecificationType
+  case object OAS_V3 extends SpecificationType
 
 }
 
@@ -60,19 +54,29 @@ case class ContactInformation(name: String, emailAddress: String)
 
 case class Maintainer(name: String, slackChannel: String, contactInfo: List[ContactInformation] = List.empty)
 
-
-sealed trait MessageType extends EnumEntry 
+sealed trait MessageType extends EnumEntry
 
 object MessageType extends Enum[MessageType] with PlayJsonEnum[MessageType] {
 
   val values = findValues
 
-  case object JSON   extends MessageType
+  case object JSON extends MessageType
   case object XML extends MessageType
 
 }
 
-case class PublishResponse(id: IntegrationId, publisherReference: String, platformType: PlatformType)
+sealed trait IntegrationType extends EnumEntry {
+  val integrationType: String
+}
 
-case class ErrorResponseMessage(message: String)
-case class ErrorResponse(errors: List[ErrorResponseMessage])
+object IntegrationType extends Enum[IntegrationType] with PlayJsonEnum[IntegrationType] {
+  val values: immutable.IndexedSeq[IntegrationType] = findValues
+
+  case object API extends IntegrationType {
+    override val integrationType: String = "uk.gov.hmrc.integrationcatalogue.models.ApiDetail"
+  }
+
+  case object FILE_TRANSFER extends IntegrationType {
+    override val integrationType: String = "uk.gov.hmrc.integrationcatalogue.models.FileTransferDetail"
+  }
+}

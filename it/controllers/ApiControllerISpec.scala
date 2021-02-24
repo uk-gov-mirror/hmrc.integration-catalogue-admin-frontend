@@ -19,13 +19,13 @@ package controllers
 import org.scalatest.BeforeAndAfterEach
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
 import support.{IntegrationCatalogueService, ServerBaseISpec}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
+import uk.gov.hmrc.integrationcatalogue.models.IntegrationResponse
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 import scala.concurrent.Future
@@ -51,8 +51,8 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
   trait Setup {
 
     val examplePublisherReference = "example-publisher-reference"
-    val validGetApisRequest = FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/apis")
-    def validDeleteApiRequest(publisherReference: String) = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/apis/$publisherReference")
+    val validGetApisRequest = FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/integrations")
+    def validDeleteApiRequest(publisherReference: String) = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$publisherReference")
   }
 
   "ApiController" when {
@@ -60,18 +60,18 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
     "POST /services/api" should {
 
       "respond with 200 when no results returned from backend" in new Setup {
-        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(List.empty[ApiDetail]).toString)
+        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(IntegrationResponse(0, List.empty)).toString)
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe OK
       }
 
       "respond with 200 when api results returned from backend" in new Setup {
-        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(List(exampleApiDetail)).toString)
+        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString)
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe OK
-        contentAsString(response) mustBe Json.toJson(List(exampleApiDetail)).toString
+        contentAsString(response) mustBe Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString
 
       }
 
@@ -80,7 +80,7 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe s"""{"errors":[{"message":"error integration-catalogue GET of 'http://localhost:$wireMockPort/integration-catalogue/apis' returned 400 (Bad Request). Response body 'error'"}]}"""
+        contentAsString(response) mustBe s"""{"errors":[{"message":"error integration-catalogue GET of 'http://localhost:$wireMockPort/integration-catalogue/integrations' returned 400 (Bad Request). Response body 'error'"}]}"""
 
       }
     }

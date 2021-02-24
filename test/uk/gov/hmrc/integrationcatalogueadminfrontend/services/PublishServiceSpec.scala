@@ -16,25 +16,19 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.services
 
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.mockito.scalatest.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogue.models._
+import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatalogueConnector
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishRequest, PublishResult}
-
-import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
-
 import java.util.UUID
-import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.IntegrationId
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.PlatformType
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.SpecificationType
+
 
 class PublishServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar  {
 
@@ -43,14 +37,14 @@ private implicit val hc: HeaderCarrier = HeaderCarrier()
 
 trait SetUp {
     val objInTest = new PublishService(mockIntegrationCatalogueConnector)
-    val publishRequest: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "contents")
+    val publishRequest: ApiPublishRequest = ApiPublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "contents")
     val expectedPublishResult: PublishResult =
-      PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
+      PublishResult(isSuccess = true, Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 }
 
 "publishApi" should {
   "return value from connector" in new SetUp {
-    when(mockIntegrationCatalogueConnector.publish(eqTo(publishRequest))(*)).thenReturn(Future.successful(Right(expectedPublishResult)))
+    when(mockIntegrationCatalogueConnector.publishApis(eqTo(publishRequest))(*)).thenReturn(Future.successful(Right(expectedPublishResult)))
 
     val result: Either[Throwable, PublishResult] =
       Await.result(objInTest.publishApi("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "contents"), 500 millis)
@@ -60,7 +54,7 @@ trait SetUp {
       case Right(publishResult: PublishResult) => publishResult shouldBe expectedPublishResult
     }
 
-    verify(mockIntegrationCatalogueConnector).publish(eqTo(publishRequest))(eqTo(hc))
+    verify(mockIntegrationCatalogueConnector).publishApis(eqTo(publishRequest))(eqTo(hc))
   }
 }
 

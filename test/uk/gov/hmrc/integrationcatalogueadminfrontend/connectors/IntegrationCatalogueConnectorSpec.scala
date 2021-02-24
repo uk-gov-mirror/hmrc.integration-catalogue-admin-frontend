@@ -24,8 +24,7 @@ import play.api.libs.json.Writes
 import play.api.test.Helpers
 import uk.gov.hmrc.http.{BadGatewayException, HttpClient, _}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishRequest, PublishResult}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.{IntegrationId, PlatformType, SpecificationType}
+import uk.gov.hmrc.integrationcatalogue.models.common._
 
 import java.util.UUID
 import org.scalatest.WordSpec
@@ -33,10 +32,10 @@ import org.scalatest.Matchers
 import uk.gov.hmrc.integrationcatalogueadminfrontend.AwaitTestSupport
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
+import uk.gov.hmrc.integrationcatalogue.models._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 import play.api.test.Helpers._
-import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 
 class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with OptionValues
   with MockitoSugar with BeforeAndAfterEach with AwaitTestSupport with ApiDetailTestData {
@@ -62,31 +61,31 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     val examplePublisherReference = "example-publisher-reference"
 
     val outboundUrl = "/integration-catalogue/apis/publish"
-    val getAllUrl = "/integration-catalogue/apis"
-    val deleteApiUrl = s"/integration-catalogue/apis/$examplePublisherReference"
+    val getAllUrl = "/integration-catalogue/integrations"
+    val deleteApiUrl = s"/integration-catalogue/integrations/$examplePublisherReference"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult) =
-      when(mockHttpClient.PUT[PublishRequest, PublishResult]
-        (eqTo(outboundUrl), any[PublishRequest], any[Seq[(String, String)]])
-        (any[Writes[PublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
+        (eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])
+        (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(response))
 
     def httpCallToPublishWillFailWithException(exception: Throwable) =
-      when(mockHttpClient.PUT[PublishRequest, PublishResult]
-        (eqTo(outboundUrl), any[PublishRequest], any[Seq[(String, String)]])
-        (any[Writes[PublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
+        (eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])
+        (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
-    def httpCallToGetAllWillSucceedWithResponse(response: List[ApiDetail]) =
-      when(mockHttpClient.GET[List[ApiDetail]]
+    def httpCallToGetAllWillSucceedWithResponse(response: IntegrationResponse) =
+      when(mockHttpClient.GET[IntegrationResponse]
         (eqTo(getAllUrl))
-        (any[HttpReads[List[ApiDetail]]], any[HeaderCarrier], any[ExecutionContext]))
+        (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(response))
     
     def httpCallToGetAllWillFailWithException(exception: Throwable) =
-      when(mockHttpClient.GET[List[ApiDetail]]
+           when(mockHttpClient.GET[IntegrationResponse]
         (eqTo(getAllUrl))
-        (any[HttpReads[List[ApiDetail]]], any[HeaderCarrier], any[ExecutionContext]))
+        (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
     def httpCallToDeleteApiWillSucceed(response: HttpResponse) =
@@ -99,13 +98,13 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
   "IntegrationCatalogueConnector send" should {
 
-      val request: PublishRequest = PublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
+      val request: ApiPublishRequest = ApiPublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
       httpCallToPublishWillSucceedWithResponse(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platformType)), List.empty))
 
 
-      val result = await(connector.publish(request))
+      val result = await(connector.publishApis(request))
 
       result match {
         case Left(_) => fail()
@@ -113,14 +112,14 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       }
 
       verify(mockHttpClient).PUT(eqTo(outboundUrl), eqTo(request),
-        any[Seq[(String, String)]])(any[Writes[PublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])
+        any[Seq[(String, String)]])(any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])
 
     }
 
     "handle exceptions" in new SetUp {
       httpCallToPublishWillFailWithException(new BadGatewayException("some error"))
 
-      val result = await(connector.publish(request))
+      val result = await(connector.publishApis(request))
 
       result match {
         case Right(_) => fail()
@@ -134,13 +133,13 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
   "getAll" should {
     "return all apis when successful" in new SetUp {
       val expectedResult = List(exampleApiDetail, exampleApiDetail2)
-      httpCallToGetAllWillSucceedWithResponse(expectedResult)
+      httpCallToGetAllWillSucceedWithResponse(IntegrationResponse(2, expectedResult))
 
       val result = await(connector.getAll())
 
       result match {
         case Left(_) => fail()
-        case Right(allApisResult: List[ApiDetail]) => allApisResult shouldBe expectedResult
+        case Right(integrationResponse: IntegrationResponse) => integrationResponse.results shouldBe expectedResult
       }
     }
 

@@ -30,9 +30,11 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishDetails, PublishError, PublishResult}
+
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogue.models._
+import uk.gov.hmrc.integrationcatalogue.models.common._
+
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
@@ -41,10 +43,8 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import play.api.libs.json.Json
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.PlatformType
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.IntegrationId
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponse
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.ErrorResponseMessage
+import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
+
 
 class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with StubBodyParserFactory {
 

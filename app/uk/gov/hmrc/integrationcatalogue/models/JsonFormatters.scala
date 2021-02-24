@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
+package uk.gov.hmrc.integrationcatalogue.models
 
 import play.api.libs.json._
-import play.api.libs.json.JodaReads._
-import play.api.libs.json.JodaWrites._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.common.{ContactInformation, ErrorResponse, ErrorResponseMessage, Maintainer, PublishResponse}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishRequest
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishError
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishDetails
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.PublishResult
-
+import uk.gov.hmrc.integrationcatalogue.models.common._
 
 object JsonFormatters {
-  implicit val publishRequestFormat = Json.format[PublishRequest]
-  implicit val publishErrorFormat = Json.format[PublishError]
-  implicit val publishDetailsFormat = Json.format[PublishDetails]
-  implicit val publishResultFormat = Json.format[PublishResult]
-
-  implicit val publishResponseFormat = Json.format[PublishResponse]
-  implicit val errorResponseMessageFormat = Json.format[ErrorResponseMessage]
-  implicit val errorResponseFormat = Json.format[ErrorResponse]
 
   val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
   implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
@@ -45,10 +30,33 @@ object JsonFormatters {
   
   implicit val formatMaintainer : Format[Maintainer] = Json.format[Maintainer]
 
+  implicit val formatIntegrationDetail : OFormat[IntegrationDetail] = Json.format[IntegrationDetail]
+
   implicit val exampleFormats: OFormat[Example] = Json.format[Example]
 
   implicit val endpointFormats: OFormat[Endpoint] = Json.format[Endpoint]
 
-   implicit val formatApiDetail : Format[ApiDetail] = Json.format[ApiDetail]
+  implicit val formatApiDetailParsed : Format[ApiDetail] = Json.format[ApiDetail]
+
+  implicit val formatFileTransferDetail : Format[FileTransferDetail] = Json.format[FileTransferDetail]
+
+  implicit val formatPublishRequest : Format[ApiPublishRequest] = Json.format[ApiPublishRequest]
+
+  implicit val formatFileTransferPublishRequest : Format[FileTransferPublishRequest] = Json.format[FileTransferPublishRequest]
+
+  implicit val formatPublishError : Format[PublishError] = Json.format[PublishError]
+
+  implicit val formatPublishDetails : Format[PublishDetails] = Json.format[PublishDetails]
+
+  implicit val formatPublishResult : Format[PublishResult] = Json.format[PublishResult]
+
+  implicit val publishResponseFormat = Json.format[PublishResponse]
+
+  implicit val errorResponseMessageFormat = Json.format[ErrorResponseMessage]
+  
+  implicit val errorResponseFormat = Json.format[ErrorResponse]
+
+
+  implicit val formatIntegrationResponse : Format[IntegrationResponse] = Json.format[IntegrationResponse]
 
 }

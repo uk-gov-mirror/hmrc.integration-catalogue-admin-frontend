@@ -16,21 +16,16 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.connectors
 
-import javax.inject.{Inject, Singleton}
+import play.api.Logging
+import play.api.http.Status._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogue.models._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import play.api.Logging
-
-import _root_.uk.gov.hmrc.integrationcatalogueadminfrontend.domain.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.connectors.{PublishRequest, PublishResult}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.ApiDetail
-import uk.gov.hmrc.http.BadRequestException
-import uk.gov.hmrc.http.NotFoundException
-import play.api.http.Status._
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -38,16 +33,16 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
 
   private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
-  def publish(publishRequest: PublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
-    http.PUT[PublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
+  def publishApis(publishRequest: ApiPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
+    http.PUT[ApiPublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
     .map(x=> Right(x))
     .recover {
       case NonFatal(e) => handleAndLogError(e)
     }
   }
 
-  def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, List[ApiDetail]]] = {
-    http.GET[List[ApiDetail]](s"$externalServiceUri/apis")
+  def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
+    http.GET[IntegrationResponse](s"$externalServiceUri/integrations")
     .map(x=> Right(x))
     .recover {
       case NonFatal(e) => handleAndLogError(e)
@@ -55,7 +50,7 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
   }
 
   def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    http.DELETE(s"$externalServiceUri/apis/$publisherReference")
+    http.DELETE(s"$externalServiceUri/integrations/$publisherReference")
       .map(_.status == NO_CONTENT)
       .recover {
         case NonFatal(e) => {
