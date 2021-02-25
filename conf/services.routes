@@ -2,6 +2,7 @@
 
 # publish
 PUT            /apis/publish                   uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
+PUT            /filetransfers/publish           uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishFileTransfer()
 
 
 #api

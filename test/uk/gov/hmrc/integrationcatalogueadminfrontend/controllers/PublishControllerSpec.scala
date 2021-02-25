@@ -83,28 +83,50 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
         stubPlayBodyParsers(mat),
       )
 
+
+
     def callPublish(expectedConnectorResponse: Option[PublishResult],
               headers: Seq[(String, String)],
               filePartKey: String,
-              fileName: String): Future[Result] = {
+              fileName: String) = {
      expectedConnectorResponse.map(response =>
         when(mockPublishService.publishApi(*, *, *, *)(*)).thenReturn(Future.successful(Right(response)))
      )
-
-      val tempFile = SingletonTemporaryFileCreator.create("text","txt")
+           val tempFile = SingletonTemporaryFileCreator.create("text","txt")
       tempFile.deleteOnExit()
 
       val data = new MultipartFormData[TemporaryFile](Map(),
         List(FilePart(filePartKey, fileName, Some("text/plain"), tempFile)), List())
+      val publishRequest =  FakeRequest.apply("PUT", "integration-catalogue-admin-frontend/publish/api")
+        .withHeaders(headers: _*)
+        .withBody(data)
+          
 
-          val publishRequest =  FakeRequest.apply("PUT", "integration-catalogue-admin-frontend/publish/api")
+      controller.publishApi()(publishRequest)
+    }
+
+
+       def callPublishReturnError(headers: Seq[(String, String)],
+              filePartKey: String,
+              fileName: String) ={
+        when(mockPublishService.publishApi(*, *, *, *)(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+        
+       val tempFile = SingletonTemporaryFileCreator.create("text","txt")
+      tempFile.deleteOnExit()
+
+      val data = new MultipartFormData[TemporaryFile](Map(),
+        List(FilePart(filePartKey, fileName, Some("text/plain"), tempFile)), List())
+      val publishRequest =  FakeRequest.apply("PUT", "integration-catalogue-admin-frontend/publish/api")
         .withHeaders(headers: _*)
         .withBody(data)
 
-      controller.publishApi()(publishRequest)
-  }
+        controller.publishApi()(publishRequest)
+      
+      }
 
   }
+
+  
 
 
   "POST /publish" should {
@@ -129,6 +151,24 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
        result shouldBeResult OK
        contentAsString(result) shouldBe raw"""{"id":"$id","publisherReference":"123456","platformType":"CORE_IF"}"""
+     }
+
+
+   "return 400 when connector response has no details or error" in new Setup{
+
+       val result: Future[Result] =  callPublish(Some(PublishResult(isSuccess = true, None, List.empty)), validHeaders, "selectedFile", "text.txt")
+
+       result shouldBeResult BAD_REQUEST
+       contentAsString(result) shouldBe """{"errors":[{"message":"Unexpected response from /integration-catalogue"}]}"""
+     }
+
+
+   "return 400 when connector returns a Left" in new Setup{
+
+       val result: Future[Result] =  callPublishReturnError( validHeaders, "selectedFile", "text.txt")
+
+       result shouldBeResult BAD_REQUEST
+       contentAsString(result) shouldBe """{"errors":[{"message":"Unexpected response from /integration-catalogue: some error"}]}"""
      }
 
     "return 200 when valid payload is sent but publish fails" in new Setup{

@@ -23,7 +23,7 @@ import play.api.http.Writeable
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.libs.json.Json
-import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, _}
@@ -38,6 +38,9 @@ import utils.MultipartFormDataWritable
 import java.io.{FileOutputStream, InputStream}
 import java.util.UUID
 import scala.concurrent.Future
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+import play.api.libs.json.JsValue
 
 class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueService {
 
@@ -63,7 +66,20 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
     val headers: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF", HeaderKeys.publisherRefKey -> "1234", HeaderKeys.specificationTypeKey -> "OAS_V3")
     implicit val writer: Writeable[MultipartFormData[TemporaryFile]] = MultipartFormDataWritable.writeable
 
+    val dateValue: DateTime = DateTime.parse("04/11/2020 20:27:05", DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss"));
 
+    val fileTransferPublishRequestObj = FileTransferPublishRequest(
+      fileTransferSpecificationVersion = "1.0",
+      publisherReference = "BVD-DPS-PCPMonthly-pull",
+      title = "BVD-DPS-PCPMonthly-pull",
+      description = "A file transfer from Birth Verification Data (BVD) to Data Provisioning Systems (DPS)",
+      platformType = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      lastUpdated =  dateValue,
+      contact = ContactInformation("Core IF Team", "example@gmail.com"),
+      sourceSystem = List("BVD"),
+      targetSystem = List("DPS"),
+      fileTransferPattern = "Corporate to corporate"
+    )
     val filePart =
     new MultipartFormData.FilePart[TemporaryFile](
       key = "selectedFile",
@@ -73,7 +89,12 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
     val multipartBody: MultipartFormData[TemporaryFile] = MultipartFormData[TemporaryFile](dataParts = Map.empty, files = Seq(filePart), badParts = Nil)
 
-    val validPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, multipartBody)
+    val validApiPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, multipartBody)
+    
+    val validFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", headers, Json.toJson(fileTransferPublishRequestObj))
+
+     
+    val invalidFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", headers, Json.toJson("{}"))
 
 
     val invalidFilePart =
@@ -112,9 +133,9 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 201 when valid request and a create" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody(200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest).get
         status(response) mustBe 201
         // check body
       }
@@ -122,9 +143,9 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody(200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest).get
         status(response) mustBe 400
         contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
 
@@ -133,9 +154,9 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 200 when valid request and an update" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
-        primeIntegrationCatalogueServicePutWithBody(200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest).get
         status(response) mustBe 200
 
       }
@@ -143,7 +164,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 400 from BodyParser when invalid body is sent" in new Setup {
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody(200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
 
 
         val response: Future[Result] = route(app, invalidPublishRequest).get
@@ -155,7 +176,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
          val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "SOME_RUBBISH",
            HeaderKeys.specificationTypeKey -> "OAS_V3",
            HeaderKeys.publisherRefKey -> "123456")
-          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validPublishRequest.withHeaders(invalidHeaders)
+          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
           val response: Future[Result] = route(app, request).get
           status(response) mustBe BAD_REQUEST
@@ -168,7 +189,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "SOME_RUBBISH",
           HeaderKeys.publisherRefKey -> "123456")
-        val request: FakeRequest[MultipartFormData[TemporaryFile]] = validPublishRequest.withHeaders(invalidHeaders)
+        val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
         status(response) mustBe BAD_REQUEST
@@ -182,7 +203,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "OAS_V3",
           HeaderKeys.publisherRefKey -> "")
-         val request: FakeRequest[MultipartFormData[TemporaryFile]] = validPublishRequest.withHeaders(invalidHeaders)
+         val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
         status(response) mustBe BAD_REQUEST
@@ -190,6 +211,47 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       }
 
+    }
+
+    "PUT /services/filetransfer/publish" should {
+
+      "respond with 201 when valid request and a create" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        status(response) mustBe 201
+        // check body
+      }
+
+      "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        status(response) mustBe 400
+        contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
+
+      }
+
+      "respond with 200 when valid request and an update" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        status(response) mustBe 200
+
+      }
+
+       "respond with 400 when invalid json is sent" in new Setup{
+
+        val response: Future[Result] = route(app, invalidFileTransferPublishRequest).get
+        status(response) mustBe 400
+
+      }
     }
 
   }

@@ -75,4 +75,18 @@ trait ApiDetailTestData {
     endpoints = endpoints
   )
 
+  val exampleFileTransfer: FileTransferDetail =
+    FileTransferDetail(  IntegrationId(UUID.fromString("e2e4ce48-29b0-11eb-adc1-0242ac120002")), 
+      fileTransferSpecificationVersion = "0.1",
+      publisherReference = "API1601",
+      title = "getKnownFactsName ETMP",
+      description = "getKnownFactsDesc",
+      lastUpdated = dateValue,
+      platform = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      maintainer = coreIfMaintainer,
+      searchText = "file transfer search text",
+      sourceSystem = List("source"),
+      targetSystem = List("target"),
+      fileTransferPattern = "pattern1")
+
 }

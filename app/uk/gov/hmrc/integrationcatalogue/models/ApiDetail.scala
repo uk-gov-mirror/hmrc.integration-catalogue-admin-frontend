@@ -56,17 +56,17 @@ case class ApiDetail(id: IntegrationId,
  override val integrationType: IntegrationType = IntegrationType.API
 }
 
-case class FileTransferDetail(id: IntegrationId,
+case class FileTransferDetail(id: IntegrationId, // Ignore
+                              fileTransferSpecificationVersion: String, // Set to 0.1?        
                               publisherReference: String,
                               title: String,
                               description: String,
-                              platform: PlatformType,
-                              searchText: String,
+                              platform: PlatformType, // Split this to Platform and type
+                              searchText: String, // Ignore
                               lastUpdated: DateTime,
                               maintainer: Maintainer,
-                              flowId: String,
-                              sourceSystem: String,
-                              targetSystem: String,
+                              sourceSystem: List[String],
+                              targetSystem: List[String],
                               fileTransferPattern: String) extends IntegrationDetail {
     override val integrationType: IntegrationType = IntegrationType.FILE_TRANSFER
 }

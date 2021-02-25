@@ -64,7 +64,7 @@ class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerS
 
 
     "return apis from connector" in new SetUp {
-      val expectedResult = List(exampleApiDetail, exampleApiDetail2)
+      val expectedResult = List(exampleApiDetail, exampleApiDetail2, exampleFileTransfer)
       when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Right(IntegrationResponse(expectedResult.size, expectedResult))))
 
       val result: Either[Throwable, IntegrationResponse] = await(objInTest.getAllIntegrations())

@@ -33,6 +33,12 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import play.api.libs.json.Writes
+import play.api.libs.json.Reads
+import play.api.libs.json.JsValue
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
 @Singleton
 class PublishController @Inject()(
@@ -47,6 +53,16 @@ class PublishController @Inject()(
   extends FrontendController(mcc) with Logging {
 
   implicit val config: AppConfig = appConfig
+
+  def publishFileTransfer()= Action.async(playBodyParsers.tolerantJson) { implicit request => 
+    if (validateJsonString[FileTransferPublishRequest](request.body.toString())) {
+      val bodyVal = request.body.as[FileTransferPublishRequest]
+      publishService.publishFileTransfer(bodyVal).map(handlePublishResult) 
+    } else {
+      logger.error("Invalid request body, must be a valid publish request")
+      Future.successful(BadRequest("Invalid request body"))
+    }
+  }
 
 
   def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] =
@@ -90,7 +106,7 @@ class PublishController @Inject()(
          case None =>  if(publishResult.errors.nonEmpty){
            BadRequest(Json.toJson(ErrorResponse(publishResult.errors.map(x => ErrorResponseMessage(x.message)))))
          } else {
-           BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "selectedFile is missing from requestBody")))))
+           BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Unexpected response from /integration-catalogue")))))
          }
        }
      }
@@ -98,4 +114,17 @@ class PublishController @Inject()(
        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unexpected response from /integration-catalogue: ${errorResult.getMessage}")))))
    }
  }
+
+  private def validateJsonString[T](body: String)(implicit write: Writes[T], reads: Reads[T]) = {
+    validateJson[T](body, body => Json.parse(body))
+  }
+
+  private def validateJson[T](body: String, f: String => JsValue)(implicit reads: Reads[T]): Boolean = {
+    Try[T] {
+      f(body).as[T]
+    } match {
+      case Success(_) => true
+      case Failure(_) => false
+    }
+  }
 }

@@ -23,6 +23,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatal
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
+import uk.gov.hmrc.integrationcatalogue.models.FileTransferPublishRequest
 
 
 @Singleton
@@ -32,6 +33,12 @@ class PublishService @Inject()(integrationCatalogueConnector: IntegrationCatalog
     (implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]]  ={
          integrationCatalogueConnector.publishApis(ApiPublishRequest(publisherRef, platformType, specType, contents))
     }
+
+  def publishFileTransfer(publishRequest: FileTransferPublishRequest)
+    (implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]]  ={
+         integrationCatalogueConnector.publishFileTransfer(publishRequest)
+    }
+
 }
 
 

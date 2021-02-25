@@ -18,17 +18,30 @@ package support
 
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-
+import play.api.test.Helpers.BAD_REQUEST
 trait IntegrationCatalogueService {
   val publishUrl = "/integration-catalogue/apis/publish"
+  val publishFileTransferUrl = "/integration-catalogue/filetransfer/publish"
   val getApisUrl = "/integration-catalogue/integrations"
   def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/integrations/$publisherReference"
 
 
 
-  def primeIntegrationCatalogueServicePutWithBody(status : Int, responseBody : String) = {
+  def primeIntegrationCatalogueServicePutReturnsBadRequest(putUrl: String) = {
 
-      stubFor(put(urlEqualTo(publishUrl))
+      stubFor(put(urlEqualTo(putUrl))
+      .willReturn(
+        aResponse()
+          .withStatus(BAD_REQUEST)
+          .withHeader("Content-Type","application/json")
+  
+      )
+    )
+  }
+
+    def primeIntegrationCatalogueServicePutWithBody(putUrl: String, status : Int, responseBody : String) = {
+
+      stubFor(put(urlEqualTo(putUrl))
       .willReturn(
         aResponse()
           .withStatus(status)

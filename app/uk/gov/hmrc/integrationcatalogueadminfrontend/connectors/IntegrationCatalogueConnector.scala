@@ -41,6 +41,14 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
     }
   }
 
+  def publishFileTransfer(publishRequest: FileTransferPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
+    http.PUT[FileTransferPublishRequest, PublishResult](s"$externalServiceUri/filetransfer/publish", publishRequest)
+    .map(x=> Right(x))
+    .recover {
+      case NonFatal(e) => handleAndLogError(e)
+    }
+  }
+
   def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
     http.GET[IntegrationResponse](s"$externalServiceUri/integrations")
     .map(x=> Right(x))
