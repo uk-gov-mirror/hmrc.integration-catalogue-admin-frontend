@@ -26,6 +26,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -49,8 +50,17 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
     }
   }
 
-  def getAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
+  def findAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
     http.GET[IntegrationResponse](s"$externalServiceUri/integrations")
+    .map(x=> Right(x))
+    .recover {
+      case NonFatal(e) => handleAndLogError(e)
+    }
+  }
+
+
+  def findByIntegrationId(id: IntegrationId)(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
+    http.GET[IntegrationDetail](s"$externalServiceUri/integrations/${id.value.toString}")
     .map(x=> Right(x))
     .recover {
       case NonFatal(e) => handleAndLogError(e)

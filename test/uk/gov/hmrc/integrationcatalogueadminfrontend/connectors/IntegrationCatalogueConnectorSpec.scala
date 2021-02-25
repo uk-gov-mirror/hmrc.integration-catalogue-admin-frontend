@@ -76,13 +76,13 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
         (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
-    def httpCallToGetAllWillSucceedWithResponse(response: IntegrationResponse) =
+    def httpCallToFindAllWillSucceedWithResponse(response: IntegrationResponse) =
       when(mockHttpClient.GET[IntegrationResponse]
         (eqTo(getAllUrl))
         (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(response))
     
-    def httpCallToGetAllWillFailWithException(exception: Throwable) =
+    def httpCallToFindAllWillFailWithException(exception: Throwable) =
            when(mockHttpClient.GET[IntegrationResponse]
         (eqTo(getAllUrl))
         (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
@@ -130,12 +130,12 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
   }
 
-  "getAll" should {
+  "findAll" should {
     "return all apis when successful" in new SetUp {
       val expectedResult = List(exampleApiDetail, exampleApiDetail2)
-      httpCallToGetAllWillSucceedWithResponse(IntegrationResponse(2, expectedResult))
+      httpCallToFindAllWillSucceedWithResponse(IntegrationResponse(2, expectedResult))
 
-      val result = await(connector.getAll())
+      val result = await(connector.findAll())
 
       result match {
         case Left(_) => fail()
@@ -144,9 +144,9 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     }
 
     "handle exceptions" in new SetUp {
-      httpCallToGetAllWillFailWithException(new BadGatewayException("some error"))
+      httpCallToFindAllWillFailWithException(new BadGatewayException("some error"))
 
-      val result = await(connector.getAll())
+      val result = await(connector.findAll())
 
       result match {
         case Right(_) => fail()

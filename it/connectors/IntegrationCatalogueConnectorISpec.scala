@@ -31,8 +31,10 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatal
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.java8.FuturesConvertersImpl
+import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
-class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueService {
+class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailTestData with BeforeAndAfterEach with IntegrationCatalogueService {
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -76,10 +78,37 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with BeforeAndA
     )
 
     val objInTest =  app.injector.instanceOf[IntegrationCatalogueConnector]
+
   }
 
 
   "IntegrationCatalogueConnector" when {
+
+    "findById" should {
+
+      "return a right with an Integration Detail when returned from backend" in new Setup{
+
+          primeIntegrationCatalogueServiceGetByIdWithBody(200, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+
+          val result = await(objInTest.findByIntegrationId(exampleApiDetail.id))
+          result match {
+            case Right(_) => succeed
+            case _ => fail
+          }
+      }
+       "return Left when any error from backend" in new Setup{
+
+          primeIntegrationCatalogueServiceGetByIdReturnsBadRequest(exampleApiDetail.id)
+
+          val result = await(objInTest.findByIntegrationId(exampleApiDetail.id))
+          result match {
+            case Left(_) => succeed
+            case _ => fail
+          }
+      }
+
+
+    }
 
     "publishFileTransfer" should {
 

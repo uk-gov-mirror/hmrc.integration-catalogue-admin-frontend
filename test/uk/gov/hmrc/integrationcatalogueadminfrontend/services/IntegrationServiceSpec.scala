@@ -27,6 +27,8 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import java.util.UUID
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 
 class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport {
 
@@ -47,33 +49,67 @@ class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerS
     }
   }
 
-  "getAllApis" should {
+  "findAll" should {
     "return error from connector" in new SetUp {
-      when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+      when(mockIntegrationCatalogueConnector.findAll()(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
 
       val result: Either[Throwable, IntegrationResponse] =
-        await(objInTest.getAllIntegrations())
+        await(objInTest.findAllIntegrations())
 
       result match {
         case Left(_) => succeed
         case Right(_) => fail()
       }
 
-      verify(mockIntegrationCatalogueConnector).getAll()(eqTo(hc))
+      verify(mockIntegrationCatalogueConnector).findAll()(eqTo(hc))
     }
 
 
     "return apis from connector" in new SetUp {
       val expectedResult = List(exampleApiDetail, exampleApiDetail2, exampleFileTransfer)
-      when(mockIntegrationCatalogueConnector.getAll()(*)).thenReturn(Future.successful(Right(IntegrationResponse(expectedResult.size, expectedResult))))
+      when(mockIntegrationCatalogueConnector.findAll()(*)).thenReturn(Future.successful(Right(IntegrationResponse(expectedResult.size, expectedResult))))
 
-      val result: Either[Throwable, IntegrationResponse] = await(objInTest.getAllIntegrations())
+      val result: Either[Throwable, IntegrationResponse] = await(objInTest.findAllIntegrations())
 
       result match {
         case Left(_) => fail()
         case Right(integrationResponse: IntegrationResponse) => integrationResponse.results shouldBe expectedResult
       }
     }
+  }
+
+  "findById" should {
+    "return error from connector" in new SetUp {
+      val id = IntegrationId(UUID.randomUUID())
+      when(mockIntegrationCatalogueConnector.findByIntegrationId(eqTo(id))(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+
+      val result: Either[Throwable, IntegrationDetail] =
+        await(objInTest.findByIntegrationId(id))
+
+      result match {
+        case Left(_) => succeed
+        case Right(_) => fail()
+      }
+
+      verify(mockIntegrationCatalogueConnector).findByIntegrationId(eqTo(id))(eqTo(hc))
+    }
+
+     "return apidetail from connector when returned from backend" in new SetUp {
+      val id = IntegrationId(UUID.randomUUID())
+      when(mockIntegrationCatalogueConnector.findByIntegrationId(eqTo(id))(*)).thenReturn(Future.successful(Right(exampleApiDetail)))
+
+      val result: Either[Throwable, IntegrationDetail] =
+        await(objInTest.findByIntegrationId(id))
+
+      result match {
+        case Right(apiDetail) => apiDetail shouldBe exampleApiDetail
+        case Left(_) => fail()
+      }
+
+      verify(mockIntegrationCatalogueConnector).findByIntegrationId(eqTo(id))(eqTo(hc))
+    }
+
+
   }
 
 }

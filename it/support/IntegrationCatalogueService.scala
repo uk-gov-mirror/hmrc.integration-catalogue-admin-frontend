@@ -19,11 +19,13 @@ package support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.test.Helpers.BAD_REQUEST
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 trait IntegrationCatalogueService {
   val publishUrl = "/integration-catalogue/apis/publish"
   val publishFileTransferUrl = "/integration-catalogue/filetransfer/publish"
   val getApisUrl = "/integration-catalogue/integrations"
   def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/integrations/$publisherReference"
+  def getIntegrationByIdUrl(id: String) = s"/integration-catalogue/integrations/$id"
 
 
 
@@ -47,6 +49,31 @@ trait IntegrationCatalogueService {
           .withStatus(status)
           .withHeader("Content-Type","application/json")
           .withBody(responseBody)
+      )
+    )
+  }
+
+  def primeIntegrationCatalogueServiceGetByIdWithBody(status : Int, responseBody : String, id: IntegrationId) = {
+
+    stubFor(get(urlEqualTo(getIntegrationByIdUrl(id.value.toString)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(responseBody)
+      )
+    )
+  }
+
+
+  def primeIntegrationCatalogueServiceGetByIdReturnsBadRequest( id: IntegrationId) = {
+
+    stubFor(get(urlEqualTo(getIntegrationByIdUrl(id.value.toString)))
+      .willReturn(
+        aResponse()
+          .withStatus(BAD_REQUEST)
+          .withHeader("Content-Type","application/json")
+  
       )
     )
   }

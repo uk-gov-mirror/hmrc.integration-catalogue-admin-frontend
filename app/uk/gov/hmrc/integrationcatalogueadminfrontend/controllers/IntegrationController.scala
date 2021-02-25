@@ -27,6 +27,8 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import uk.gov.hmrc.http.NotFoundException
 
 
 @Singleton
@@ -35,17 +37,25 @@ class IntegrationController @Inject()(appConfig: AppConfig, integrationService: 
 
   implicit val config: AppConfig = appConfig
 
- def getAllIntegrations: Action[AnyContent] = Action.async { implicit request =>
-    integrationService.getAllIntegrations() map {
+ def findAllIntegrations: Action[AnyContent] = Action.async { implicit request =>
+    integrationService.findAllIntegrations() map {
       case Right(response) => Ok(Json.toJson(response))
-      case Left(error: Throwable)  =>  BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"error integration-catalogue ${error.getMessage}")))))
+      case Left(error: Throwable)  =>  BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"getAllIntegrations error integration-catalogue ${error.getMessage}")))))
+    }
+ }
+
+ def findByIntegrationId(id: IntegrationId)  = Action.async { implicit request =>
+  integrationService.findByIntegrationId(id)map {
+      case Right(response) => Ok(Json.toJson(response))
+      case Left(error: NotFoundException)  => NotFound
+      case Left(error: Throwable) =>   BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
     }
  }
 
   def deleteByPublisherReference(publisherReference: String) : Action[AnyContent] = Action.async { implicit request =>
     integrationService.deleteByPublisherReference(publisherReference).map {
       case true => NoContent
-      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"The requested resource could not be found.")))))
+      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByPublisherReference: The requested resource could not be found.")))))
     }
   }
 }

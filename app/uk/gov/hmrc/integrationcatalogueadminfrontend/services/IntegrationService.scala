@@ -22,6 +22,8 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatal
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 
 
 @Singleton
@@ -31,10 +33,15 @@ class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCat
     integrationCatalogueConnector.deleteByPublisherReference(publisherReference)
   }
 
-  def getAllIntegrations()
+  def findAllIntegrations()
     (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
-         integrationCatalogueConnector.getAll()
+         integrationCatalogueConnector.findAll()
     }
+
+  def findByIntegrationId(integrationId: IntegrationId)
+    (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
+         integrationCatalogueConnector.findByIntegrationId(integrationId)
+  }  
 }
 
 

@@ -31,6 +31,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     majorVersion                     := 0,
     scalaVersion                     := "2.12.12",
+    routesImport                     += "uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.binders._",
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
     Test / unmanagedSourceDirectories += baseDirectory(_ / "test-common").value,
     TwirlKeys.templateImports ++= Seq(

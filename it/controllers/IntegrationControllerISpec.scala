@@ -29,8 +29,10 @@ import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 import scala.concurrent.Future
+import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
+import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 
-class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueService with ApiDetailTestData {
+class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueService with ApiDetailTestData {
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -52,12 +54,40 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
 
     val examplePublisherReference = "example-publisher-reference"
     val validGetApisRequest = FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/integrations")
+    def validFindByIntegrationIdRequest(id: IntegrationId) = FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/${id.value}")
     def validDeleteApiRequest(publisherReference: String) = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$publisherReference")
   }
 
-  "ApiController" when {
+  "IntegrationController" when {
 
-    "POST /services/api" should {
+    "GET /services/integrations/{id}" should  {
+
+      "return 200 and integration detail from backend" in new Setup {
+       primeIntegrationCatalogueServiceGetByIdWithBody(200, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        status(response) mustBe OK
+        contentAsString(response) mustBe """{"_type":"uk.gov.hmrc.integrationcatalogue.models.ApiDetail","id":"e2e4ce48-29b0-11eb-adc1-0242ac120002","publisherReference":"API1689","title":"getKnownFactsName","description":"getKnownFactsDesc","platform":"CORE_IF","searchText":"Some Search Text","hods":["ETMP"],"lastUpdated":"2020-11-04T20:27:05.000+0000","maintainer":{"name":"IF Team","slackChannel":"N/A","contactInfo":[]},"messageType":"JSON","version":"1.1.0","specificationType":"OAS_V3","endpoints":[{"path":"/some/url","httpMethod":"GET","summary":"some summary","description":"some description","exampleRequests":[{"name":"example request 1","jsonBody":"{\"someValue\": \"abcdefg\"}","mediaType":"application/json"}],"exampleResponses":[{"name":"example response name","jsonBody":"example response body","mediaType":"application/json"}]},{"path":"/some/url","httpMethod":"PUT","summary":"some summary","description":"some description","exampleRequests":[],"exampleResponses":[]}]}"""
+      }
+
+
+      "return 404 when backend returns 404" in new Setup {
+       primeIntegrationCatalogueServiceGetByIdWithBody(404, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        status(response) mustBe NOT_FOUND
+      }
+
+      "return 400 when backend returns 400" in new Setup {
+       primeIntegrationCatalogueServiceGetByIdWithBody(400, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        status(response) mustBe BAD_REQUEST
+      }
+
+    }
+
+    "GET /services/integrations" should {
 
       "respond with 200 when no results returned from backend" in new Setup {
         primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(IntegrationResponse(0, List.empty)).toString)
@@ -80,12 +110,12 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe s"""{"errors":[{"message":"error integration-catalogue GET of 'http://localhost:$wireMockPort/integration-catalogue/integrations' returned 400 (Bad Request). Response body 'error'"}]}"""
+        contentAsString(response) mustBe s"""{"errors":[{"message":"getAllIntegrations error integration-catalogue GET of 'http://localhost:$wireMockPort/integration-catalogue/integrations' returned 400 (Bad Request). Response body 'error'"}]}"""
 
       }
     }
 
-    "DELETE /services/api/:publisherReference" should {
+    "DELETE /services/integrations/:publisherReference" should {
 
       "respond with 204 when deletion successful" in new Setup {
         primeIntegrationCatalogueServiceDelete(examplePublisherReference, 204)
@@ -99,7 +129,7 @@ class ApiControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with In
 
         val response: Future[Result] = route(app, validDeleteApiRequest(examplePublisherReference)).get
         status(response) mustBe NOT_FOUND
-        contentAsString(response) mustBe """{"errors":[{"message":"The requested resource could not be found."}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"deleteByPublisherReference: The requested resource could not be found."}]}"""
       }
     }
   }
