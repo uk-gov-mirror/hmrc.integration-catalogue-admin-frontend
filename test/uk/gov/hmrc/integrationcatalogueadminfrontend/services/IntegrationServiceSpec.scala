@@ -29,12 +29,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import java.util.UUID
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import org.scalatest.BeforeAndAfterEach
 
-class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport {
+class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport with BeforeAndAfterEach {
 
   val mockIntegrationCatalogueConnector: IntegrationCatalogueConnector = mock[IntegrationCatalogueConnector]
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    reset(mockIntegrationCatalogueConnector)
+  }
   trait SetUp {
     val objInTest = new IntegrationService(mockIntegrationCatalogueConnector)
     val examplePublisherReference = "example-publisher-reference"
@@ -49,32 +54,32 @@ class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerS
     }
   }
 
-  "findAll" should {
-    "return error from connector" in new SetUp {
-      when(mockIntegrationCatalogueConnector.findAll()(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
+
+  "findWithFilter" should {
+    "return a Right when successful" in new SetUp {
+      val expectedResult = List(exampleApiDetail, exampleApiDetail2, exampleFileTransfer)
+      when(mockIntegrationCatalogueConnector.findWithFilters(*, *)(*)).thenReturn(Future.successful(Right(IntegrationResponse(expectedResult.size, expectedResult))))
+
+      val result: Either[Throwable, IntegrationResponse] = await(objInTest.findWithFilters(List("search"), List.empty))
+
+      result match {
+        case Left(_) => fail()
+        case Right(integrationResponse: IntegrationResponse) => integrationResponse.results shouldBe expectedResult
+      }
+    }
+
+    "return Left when error from connector" in new SetUp {
+      when(mockIntegrationCatalogueConnector.findWithFilters(*,*)(*)).thenReturn(Future.successful(Left(new RuntimeException("some error"))))
 
       val result: Either[Throwable, IntegrationResponse] =
-        await(objInTest.findAllIntegrations())
+        await(objInTest.findWithFilters(List("search"), List.empty))
 
       result match {
         case Left(_) => succeed
         case Right(_) => fail()
       }
 
-      verify(mockIntegrationCatalogueConnector).findAll()(eqTo(hc))
-    }
-
-
-    "return apis from connector" in new SetUp {
-      val expectedResult = List(exampleApiDetail, exampleApiDetail2, exampleFileTransfer)
-      when(mockIntegrationCatalogueConnector.findAll()(*)).thenReturn(Future.successful(Right(IntegrationResponse(expectedResult.size, expectedResult))))
-
-      val result: Either[Throwable, IntegrationResponse] = await(objInTest.findAllIntegrations())
-
-      result match {
-        case Left(_) => fail()
-        case Right(integrationResponse: IntegrationResponse) => integrationResponse.results shouldBe expectedResult
-      }
+      verify(mockIntegrationCatalogueConnector).findWithFilters(eqTo(List("search")), eqTo(List.empty))(eqTo(hc))
     }
   }
 

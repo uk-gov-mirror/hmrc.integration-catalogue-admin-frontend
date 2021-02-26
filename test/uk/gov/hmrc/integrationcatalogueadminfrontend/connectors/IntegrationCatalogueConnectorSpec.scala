@@ -59,9 +59,9 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       mockAppConfig)
 
     val examplePublisherReference = "example-publisher-reference"
-
+    val searchTerm  = "API1689" 
     val outboundUrl = "/integration-catalogue/apis/publish"
-    val getAllUrl = "/integration-catalogue/integrations"
+    val findWithFilterlUrl = s"/integration-catalogue/integrations/find-with-filter"
     val deleteApiUrl = s"/integration-catalogue/integrations/$examplePublisherReference"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult) =
@@ -76,15 +76,15 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
         (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
-    def httpCallToFindAllWillSucceedWithResponse(response: IntegrationResponse) =
+    def httpCallToFindWithFilterWillSucceedWithResponse(response: IntegrationResponse) =
       when(mockHttpClient.GET[IntegrationResponse]
-        (eqTo(getAllUrl))
+        (eqTo(findWithFilterlUrl), eqTo(Seq(("searchTerm",searchTerm))))
         (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(response))
     
-    def httpCallToFindAllWillFailWithException(exception: Throwable) =
+    def httpCallToFindWithFilterWillFailWithException(exception: Throwable) =
            when(mockHttpClient.GET[IntegrationResponse]
-        (eqTo(getAllUrl))
+        (eqTo(findWithFilterlUrl), eqTo(Seq(("searchTerm",searchTerm))))
         (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.failed(exception))
 
@@ -130,12 +130,12 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
   }
 
-  "findAll" should {
-    "return all apis when successful" in new SetUp {
+  "findWithFilter" should {
+    "return Right when successful" in new SetUp {
       val expectedResult = List(exampleApiDetail, exampleApiDetail2)
-      httpCallToFindAllWillSucceedWithResponse(IntegrationResponse(2, expectedResult))
+      httpCallToFindWithFilterWillSucceedWithResponse(IntegrationResponse(2, expectedResult))
 
-      val result = await(connector.findAll())
+      val result = await(connector.findWithFilters(List(searchTerm), List.empty))
 
       result match {
         case Left(_) => fail()
@@ -144,9 +144,9 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     }
 
     "handle exceptions" in new SetUp {
-      httpCallToFindAllWillFailWithException(new BadGatewayException("some error"))
+      httpCallToFindWithFilterWillFailWithException(new BadGatewayException("some error"))
 
-      val result = await(connector.findAll())
+      val result = await(connector.findWithFilters(List(searchTerm), List.empty))
 
       result match {
         case Right(_) => fail()

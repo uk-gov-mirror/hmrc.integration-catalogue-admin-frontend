@@ -27,6 +27,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -50,14 +51,22 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
     }
   }
 
-  def findAll()(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
-    http.GET[IntegrationResponse](s"$externalServiceUri/integrations")
+  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
+   //queryParams: Seq[(String, String)]
+   val queryParmsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
+    http.GET[IntegrationResponse](s"$externalServiceUri/integrations/find-with-filter", queryParams = queryParmsValues)
     .map(x=> Right(x))
     .recover {
       case NonFatal(e) => handleAndLogError(e)
     }
   }
 
+  private def buildQueryParams(searchTerm: List[String], platformFilter: List[PlatformType]): Seq[(String, String)] = {
+    val searchTerms = searchTerm.map(x => ("searchTerm" , x)).toSeq
+    val platformsFilters = platformFilter.map((x: PlatformType) => ("platformFilter" , x.toString())).toSeq
+    searchTerms ++ platformsFilters
+  
+  } 
 
   def findByIntegrationId(id: IntegrationId)(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
     http.GET[IntegrationDetail](s"$externalServiceUri/integrations/${id.value.toString}")

@@ -55,6 +55,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     val examplePublisherReference = "example-publisher-reference"
     val validGetApisRequest = FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/integrations")
     def validFindByIntegrationIdRequest(id: IntegrationId) = FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/${id.value}")
+    def validFindwithFilterRequest(searchTerm: String) = FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/find-with-filter$searchTerm")
     def validDeleteApiRequest(publisherReference: String) = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$publisherReference")
   }
 
@@ -72,14 +73,14 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
 
       "return 404 when backend returns 404" in new Setup {
-       primeIntegrationCatalogueServiceGetByIdWithBody(404, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+       primeIntegrationCatalogueServiceGetByIdWithBody(404, "", exampleApiDetail.id)
 
         val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
         status(response) mustBe NOT_FOUND
       }
 
       "return 400 when backend returns 400" in new Setup {
-       primeIntegrationCatalogueServiceGetByIdWithBody(400, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+       primeIntegrationCatalogueServiceGetByIdWithBody(400, "", exampleApiDetail.id)
 
         val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
         status(response) mustBe BAD_REQUEST
@@ -87,17 +88,59 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
     }
 
+     "GET /integrations/find-with-filter" should {
+        "return 200 and integration response from backend when using searchTerm" in new Setup {
+        val searchTerm = "?searchTerm=API1689"
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(200, Json.toJson(IntegrationResponse(0, List.empty)).toString, searchTerm)
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
+          status(response) mustBe OK
+          contentAsString(response) mustBe """{"count":0,"results":[]}"""
+        }
+
+        "return 200 and integration response from backend when using platformFilter" in new Setup {
+        val platformFilter = "?platformFilter=CORE_IF"
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(200, Json.toJson(IntegrationResponse(0, List.empty)).toString, platformFilter)
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(platformFilter)).get
+          status(response) mustBe OK
+          contentAsString(response) mustBe """{"count":0,"results":[]}"""
+        }
+
+        "return 400 when using invalid platformFilter" in new Setup {
+        val platformFilter = "?platformFilter=UNKNOWN"
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(platformFilter)).get
+          status(response) mustBe 400
+
+        }
+
+      "return 404 and when 404 returned from backend" in new Setup {
+        val searchTerm = "?searchTerm=API1689"
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(404, "", searchTerm)
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
+          status(response) mustBe NOT_FOUND
+          
+        }
+
+      "return 400 and when 400 returned from backend" in new Setup {
+        val searchTerm = "?searchTerm=API1689"
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(400, "", searchTerm)
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
+          status(response) mustBe BAD_REQUEST
+          
+        }
+
+
+     }
+
     "GET /services/integrations" should {
 
-      "respond with 200 when no results returned from backend" in new Setup {
-        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(IntegrationResponse(0, List.empty)).toString)
-
-        val response: Future[Result] = route(app, validGetApisRequest).get
-        status(response) mustBe OK
-      }
 
       "respond with 200 when api results returned from backend" in new Setup {
-        primeIntegrationCatalogueServiceGetWithBody(200, Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString)
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(200, Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString, "")
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe OK
@@ -105,12 +148,19 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
       }
 
+      "respond with 404 when no results returned from backend" in new Setup {
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(404, "", "")
+
+        val response: Future[Result] = route(app, validGetApisRequest).get
+        status(response) mustBe NOT_FOUND
+      }
+
       "respond with 400 when bad request returned from backend" in new Setup {
-        primeIntegrationCatalogueServiceGetWithBody(400, "error")
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(400, "", "")
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe s"""{"errors":[{"message":"getAllIntegrations error integration-catalogue GET of 'http://localhost:$wireMockPort/integration-catalogue/integrations' returned 400 (Bad Request). Response body 'error'"}]}"""
+       
 
       }
     }

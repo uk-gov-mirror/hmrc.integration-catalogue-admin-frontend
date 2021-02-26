@@ -60,3 +60,4 @@ case class PublishResponse(id: IntegrationId, publisherReference: String, platfo
 
 case class ErrorResponseMessage(message: String)
 case class ErrorResponse(errors: List[ErrorResponseMessage])
+

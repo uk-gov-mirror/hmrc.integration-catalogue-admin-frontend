@@ -31,7 +31,6 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.connectors.IntegrationCatal
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import uk.gov.hmrc.http.HeaderCarrier
-import scala.concurrent.java8.FuturesConvertersImpl
 import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailTestData with BeforeAndAfterEach with IntegrationCatalogueService {
@@ -77,6 +76,8 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
       fileTransferPattern = "Corporate to corporate"
     )
 
+    val integrationResponse = IntegrationResponse(1, List(exampleApiDetail))
+
     val objInTest =  app.injector.instanceOf[IntegrationCatalogueConnector]
 
   }
@@ -108,6 +109,28 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
       }
 
 
+    }
+
+    "findWithFilter" should {
+      "return Right with IntegrationResponse " in new Setup {
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(200, Json.toJson(integrationResponse).toString(), "?searchTerm=API1689")
+        val result = await(objInTest.findWithFilters(List("API1689"), List.empty))
+            result match {
+              case Right(_) => succeed
+              case _ => fail
+            }
+
+      }      
+      
+      "return Left with Bad Request " in new Setup {
+        primeIntegrationCatalogueServiceFindWithFilterWithBadRequest("?searchTerm=API1689")
+        val result = await(objInTest.findWithFilters(List("API1689"), List.empty))
+            result match {
+              case Left(_) => succeed
+              case _ => fail
+            }
+
+        }
     }
 
     "publishFileTransfer" should {

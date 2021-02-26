@@ -26,9 +26,32 @@ trait IntegrationCatalogueService {
   val getApisUrl = "/integration-catalogue/integrations"
   def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/integrations/$publisherReference"
   def getIntegrationByIdUrl(id: String) = s"/integration-catalogue/integrations/$id"
+  def findWithFiltersUrl(searchTerm: String) = s"/integration-catalogue/integrations/find-with-filter$searchTerm"
 
+    def primeIntegrationCatalogueServiceFindWithFilterWithBadRequest(searchTerm: String) = {
 
+    stubFor(get(urlEqualTo(findWithFiltersUrl(searchTerm)))
+      .willReturn(
+        aResponse()
+          .withStatus(BAD_REQUEST)
+          .withHeader("Content-Type","application/json")
+      )
+    )
+  }
 
+  def primeIntegrationCatalogueServiceFindWithFilterWithBody(status : Int, responseBody : String, searchTerm: String) = {
+
+    stubFor(get(urlEqualTo(findWithFiltersUrl(searchTerm)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(responseBody)
+      )
+    )
+  }
+  
+  
   def primeIntegrationCatalogueServicePutReturnsBadRequest(putUrl: String) = {
 
       stubFor(put(urlEqualTo(putUrl))
