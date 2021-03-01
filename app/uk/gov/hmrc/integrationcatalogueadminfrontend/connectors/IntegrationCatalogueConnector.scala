@@ -36,59 +36,49 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
   private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
   def publishApis(publishRequest: ApiPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
-    http.PUT[ApiPublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
-    .map(x=> Right(x))
-    .recover {
-      case NonFatal(e) => handleAndLogError(e)
-    }
+    handleResult(
+      http.PUT[ApiPublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest))
   }
 
   def publishFileTransfer(publishRequest: FileTransferPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
-    http.PUT[FileTransferPublishRequest, PublishResult](s"$externalServiceUri/filetransfer/publish", publishRequest)
-    .map(x=> Right(x))
-    .recover {
-      case NonFatal(e) => handleAndLogError(e)
-    }
+    handleResult(
+      http.PUT[FileTransferPublishRequest, PublishResult](s"$externalServiceUri/filetransfer/publish", publishRequest))
   }
 
-  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
-   //queryParams: Seq[(String, String)]
-   val queryParmsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
-    http.GET[IntegrationResponse](s"$externalServiceUri/integrations/find-with-filter", queryParams = queryParmsValues)
-    .map(x=> Right(x))
-    .recover {
-      case NonFatal(e) => handleAndLogError(e)
-    }
+  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])
+                     (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
+   val queryParamsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
+    handleResult(
+      http.GET[IntegrationResponse](s"$externalServiceUri/integrations/find-with-filter", queryParams = queryParamsValues))
   }
-
-  private def buildQueryParams(searchTerm: List[String], platformFilter: List[PlatformType]): Seq[(String, String)] = {
-    val searchTerms = searchTerm.map(x => ("searchTerm" , x)).toSeq
-    val platformsFilters = platformFilter.map((x: PlatformType) => ("platformFilter" , x.toString())).toSeq
-    searchTerms ++ platformsFilters
-  
-  } 
 
   def findByIntegrationId(id: IntegrationId)(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
-    http.GET[IntegrationDetail](s"$externalServiceUri/integrations/${id.value.toString}")
-    .map(x=> Right(x))
-    .recover {
-      case NonFatal(e) => handleAndLogError(e)
-    }
+    handleResult(http.GET[IntegrationDetail](s"$externalServiceUri/integrations/${id.value.toString}"))
   }
 
-  def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    http.DELETE(s"$externalServiceUri/integrations/$publisherReference")
+  def deleteByIntegrationId(integrationId: IntegrationId)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    http.DELETE(s"$externalServiceUri/integrations/${integrationId.value}")
       .map(_.status == NO_CONTENT)
       .recover {
-        case NonFatal(e) => {
-          logger.error(e.getMessage())
+        case NonFatal(e) =>
+          logger.error(e.getMessage)
           false
-        }
       }
   }
 
- private  def handleAndLogError(error: Throwable) = {
-      logger.error(error.getMessage())
-      Left(error)
+  private def buildQueryParams(searchTerm: List[String], platformFilter: List[PlatformType]): Seq[(String, String)] = {
+    val searchTerms = searchTerm.map(x => ("searchTerm", x))
+    val platformsFilters = platformFilter.map((x: PlatformType) => ("platformFilter", x.toString))
+    searchTerms ++ platformsFilters
+
   }
+
+  private def handleResult[A](result: Future[A]): Future[Either[Throwable, A]] ={
+    result.map(x=> Right(x))
+      .recover {
+        case NonFatal(e) => logger.error(e.getMessage)
+          Left(e)
+      }
+  }
+
 }

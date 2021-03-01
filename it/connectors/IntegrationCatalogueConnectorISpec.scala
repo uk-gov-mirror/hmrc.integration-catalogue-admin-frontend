@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package controllers
+package connectors
 
 import org.scalatest.BeforeAndAfterEach
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.libs.ws.WSClient
-import support.{IntegrationCatalogueService, ServerBaseISpec}
+import support.{IntegrationCatalogueConnectorStub, ServerBaseISpec}
 import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogue.models._
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
@@ -33,7 +33,7 @@ import org.joda.time.format.DateTimeFormat
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
-class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailTestData with BeforeAndAfterEach with IntegrationCatalogueService {
+class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailTestData with BeforeAndAfterEach with IntegrationCatalogueConnectorStub {
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -54,7 +54,7 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   trait Setup {
-    val integrationId =  IntegrationId(UUID.fromString("b4e0c3ca-c19e-4c88-adf9-0e4af361076e"))
+    val integrationId: IntegrationId =  IntegrationId(UUID.fromString("b4e0c3ca-c19e-4c88-adf9-0e4af361076e"))
     val publisherReference =  "BVD-DPS-PCPMonthly-pull"
     def createBackendPublishResponse(isSuccess: Boolean, isUpdate: Boolean): PublishResult = {
         val publishDetails = if(isSuccess) Some(PublishDetails(isUpdate, integrationId, publisherReference, PlatformType.CORE_IF_FILE_TRANSFER_FLOW)) else None
@@ -63,7 +63,7 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
     }
   val dateValue: DateTime = DateTime.parse("04/11/2020 20:27:05", DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss"));
 
-    val fileTransferPublishRequestObj = FileTransferPublishRequest(
+    val fileTransferPublishRequestObj: FileTransferPublishRequest = FileTransferPublishRequest(
       fileTransferSpecificationVersion = "1.0",
       publisherReference = publisherReference,
       title = "BVD-DPS-PCPMonthly-pull",
@@ -76,9 +76,9 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
       fileTransferPattern = "Corporate to corporate"
     )
 
-    val integrationResponse = IntegrationResponse(1, List(exampleApiDetail))
+    val integrationResponse: IntegrationResponse = IntegrationResponse(1, List(exampleApiDetail))
 
-    val objInTest =  app.injector.instanceOf[IntegrationCatalogueConnector]
+    val objInTest: IntegrationCatalogueConnector =  app.injector.instanceOf[IntegrationCatalogueConnector]
 
   }
 
@@ -89,9 +89,9 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
 
       "return a right with an Integration Detail when returned from backend" in new Setup{
 
-          primeIntegrationCatalogueServiceGetByIdWithBody(200, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
+          primeIntegrationCatalogueServiceGetByIdWithBody(OK, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
 
-          val result = await(objInTest.findByIntegrationId(exampleApiDetail.id))
+          val result: Either[Throwable, IntegrationDetail] = await(objInTest.findByIntegrationId(exampleApiDetail.id))
           result match {
             case Right(_) => succeed
             case _ => fail
@@ -101,7 +101,7 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
 
           primeIntegrationCatalogueServiceGetByIdReturnsBadRequest(exampleApiDetail.id)
 
-          val result = await(objInTest.findByIntegrationId(exampleApiDetail.id))
+          val result: Either[Throwable, IntegrationDetail] = await(objInTest.findByIntegrationId(exampleApiDetail.id))
           result match {
             case Left(_) => succeed
             case _ => fail
@@ -113,18 +113,18 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
 
     "findWithFilter" should {
       "return Right with IntegrationResponse " in new Setup {
-        primeIntegrationCatalogueServiceFindWithFilterWithBody(200, Json.toJson(integrationResponse).toString(), "?searchTerm=API1689")
-        val result = await(objInTest.findWithFilters(List("API1689"), List.empty))
+        primeIntegrationCatalogueServiceFindWithFilterWithBody(OK, Json.toJson(integrationResponse).toString(), "?searchTerm=API1689")
+        val result: Either[Throwable, IntegrationResponse] = await(objInTest.findWithFilters(List("API1689"), List.empty))
             result match {
               case Right(_) => succeed
               case _ => fail
             }
 
-      }      
+      }
       
       "return Left with Bad Request " in new Setup {
         primeIntegrationCatalogueServiceFindWithFilterWithBadRequest("?searchTerm=API1689")
-        val result = await(objInTest.findWithFilters(List("API1689"), List.empty))
+        val result: Either[Throwable, IntegrationResponse] = await(objInTest.findWithFilters(List("API1689"), List.empty))
             result match {
               case Left(_) => succeed
               case _ => fail
@@ -138,11 +138,11 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
       "return a Right containing a publish result when integration catalogue returns a publish result" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
-        val publishResult  = await(objInTest.publishFileTransfer(fileTransferPublishRequestObj)) 
+        val publishResult: Either[Throwable, PublishResult] = await(objInTest.publishFileTransfer(fileTransferPublishRequestObj))
         publishResult match {
-          case Right(result: PublishResult) => {
+          case Right(result: PublishResult) =>
             result.isSuccess mustBe true
             result.errors.isEmpty mustBe true
             result.publishDetails.isDefined mustBe true
@@ -151,18 +151,17 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
             publishDetails.integrationId mustBe integrationId
             publishDetails.platformType mustBe fileTransferPublishRequestObj.platformType
             publishDetails.publisherReference mustBe publisherReference
-          }
           case Left(_) => fail
         }
-      } 
+      }
 
 
       "return a Left when we receive a failure from the integration connector" in new Setup{
         primeIntegrationCatalogueServicePutReturnsBadRequest("/integration-catalogue/filetransfer/publish")
 
-        val publishResult  = await(objInTest.publishFileTransfer(fileTransferPublishRequestObj)) 
+        val publishResult: Either[Throwable, PublishResult] = await(objInTest.publishFileTransfer(fileTransferPublishRequestObj))
         publishResult match {
-          case Right(result: PublishResult) => fail
+          case Right(_: PublishResult) => fail
           case Left(_) => succeed
         }
       }

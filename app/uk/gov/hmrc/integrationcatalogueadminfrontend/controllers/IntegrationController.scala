@@ -42,32 +42,35 @@ class IntegrationController @Inject()(appConfig: AppConfig, integrationService: 
     integrationService.findWithFilters(searchTerm, platformFilter)
      .map {
       case Right(response) => Ok(Json.toJson(response))
-      case Left(error: NotFoundException)  => NotFound
-      case Left(error: Throwable) =>   BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
-    }   
+      case Left(_: NotFoundException)  => NotFound
+      case Left(error: Throwable) =>
+        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
+    }
 }
 
  def findAllIntegrations: Action[AnyContent] = Action.async { implicit request =>
     integrationService.findWithFilters(List.empty, List.empty)
      .map {
       case Right(response) => Ok(Json.toJson(response))
-      case Left(error: NotFoundException)  => NotFound
-      case Left(error: Throwable) =>   BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
-    }   
+      case Left(_: NotFoundException)  => NotFound
+      case Left(error: Throwable) =>
+        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
+    }
  }
 
  def findByIntegrationId(id: IntegrationId)  = Action.async { implicit request =>
   integrationService.findByIntegrationId(id)map {
       case Right(response) => Ok(Json.toJson(response))
-      case Left(error: NotFoundException)  => NotFound
-      case Left(error: Throwable) =>   BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
+      case Left(_: NotFoundException)  => NotFound
+      case Left(error: Throwable) =>
+        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
     }
  }
 
-  def deleteByPublisherReference(publisherReference: String) : Action[AnyContent] = Action.async { implicit request =>
-    integrationService.deleteByPublisherReference(publisherReference).map {
+  def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] = Action.async { implicit request =>
+    integrationService.deleteByIntegrationId(integrationId).map {
       case true => NoContent
-      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByPublisherReference: The requested resource could not be found.")))))
+      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
     }
   }
 }

@@ -30,8 +30,8 @@ import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 @Singleton
 class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector){
 
-  def deleteByPublisherReference(publisherReference: String)(implicit hc: HeaderCarrier) : Future[Boolean] = {
-    integrationCatalogueConnector.deleteByPublisherReference(publisherReference)
+  def deleteByIntegrationId(integrationId: IntegrationId)(implicit hc: HeaderCarrier) : Future[Boolean] = {
+    integrationCatalogueConnector.deleteByIntegrationId(integrationId)
   }
 
   def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])
@@ -42,7 +42,7 @@ class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCat
   def findByIntegrationId(integrationId: IntegrationId)
     (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
          integrationCatalogueConnector.findByIntegrationId(integrationId)
-  }  
+  }
 }
 
 

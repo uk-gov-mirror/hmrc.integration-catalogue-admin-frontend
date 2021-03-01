@@ -27,7 +27,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, _}
-import support.{IntegrationCatalogueService, ServerBaseISpec}
+import support.{IntegrationCatalogueConnectorStub, ServerBaseISpec}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
 import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogue.models._
@@ -42,7 +42,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.JsValue
 
-class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueService {
+class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub {
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

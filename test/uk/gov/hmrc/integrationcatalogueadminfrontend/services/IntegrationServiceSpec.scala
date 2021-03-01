@@ -42,14 +42,14 @@ class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerS
   }
   trait SetUp {
     val objInTest = new IntegrationService(mockIntegrationCatalogueConnector)
-    val examplePublisherReference = "example-publisher-reference"
+    val exampleIntegrationId = IntegrationId(UUID.fromString("2840ce2d-03fa-46bb-84d9-0299402b7b32"))
 
   }
 
   "deleteByPublisherReference" should {
     "return true from connector when deletion successful" in new SetUp {
-      when(mockIntegrationCatalogueConnector.deleteByPublisherReference(*)(*)).thenReturn(Future.successful(true))
-      val result: Boolean = await(objInTest.deleteByPublisherReference(examplePublisherReference))
+      when(mockIntegrationCatalogueConnector.deleteByIntegrationId(eqTo(exampleIntegrationId))(*)).thenReturn(Future.successful(true))
+      val result: Boolean = await(objInTest.deleteByIntegrationId(exampleIntegrationId))
       result shouldBe true
     }
   }

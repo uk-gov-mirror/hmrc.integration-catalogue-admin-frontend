@@ -20,11 +20,11 @@ package support
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.test.Helpers.BAD_REQUEST
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
-trait IntegrationCatalogueService {
+trait IntegrationCatalogueConnectorStub {
   val publishUrl = "/integration-catalogue/apis/publish"
   val publishFileTransferUrl = "/integration-catalogue/filetransfer/publish"
   val getApisUrl = "/integration-catalogue/integrations"
-  def deleteApiUrl(publisherReference: String) = s"/integration-catalogue/integrations/$publisherReference"
+  def deleteintegrationByIdUrl(integrationId: String) = s"/integration-catalogue/integrations/$integrationId"
   def getIntegrationByIdUrl(id: String) = s"/integration-catalogue/integrations/$id"
   def findWithFiltersUrl(searchTerm: String) = s"/integration-catalogue/integrations/find-with-filter$searchTerm"
 
@@ -50,8 +50,8 @@ trait IntegrationCatalogueService {
       )
     )
   }
-  
-  
+
+
   def primeIntegrationCatalogueServicePutReturnsBadRequest(putUrl: String) = {
 
       stubFor(put(urlEqualTo(putUrl))
@@ -59,7 +59,7 @@ trait IntegrationCatalogueService {
         aResponse()
           .withStatus(BAD_REQUEST)
           .withHeader("Content-Type","application/json")
-  
+
       )
     )
   }
@@ -96,7 +96,7 @@ trait IntegrationCatalogueService {
         aResponse()
           .withStatus(BAD_REQUEST)
           .withHeader("Content-Type","application/json")
-  
+
       )
     )
   }
@@ -113,9 +113,9 @@ trait IntegrationCatalogueService {
     )
   }
 
-  def primeIntegrationCatalogueServiceDelete(publisherReference: String, status : Int) = {
+  def primeIntegrationCatalogueServiceDelete(integrationId: String, status : Int) = {
 
-    stubFor(delete(urlEqualTo(deleteApiUrl(publisherReference)))
+    stubFor(delete(urlEqualTo(deleteintegrationByIdUrl(integrationId)))
       .willReturn(
         aResponse()
           .withStatus(status)
