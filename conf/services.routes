@@ -1,12 +1,15 @@
 # services routes
 
 # publish
++ nocsrf
 PUT            /apis/publish                                uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishApi()
++ nocsrf
 PUT            /filetransfers/publish                       uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.PublishController.publishFileTransfer()
 
 
 #api
 GET            /integrations/find-with-filter               uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.findWithFilters(searchTerm: List[String], platformFilter: List[uk.gov.hmrc.integrationcatalogue.models.common.PlatformType])
-GET            /integrations                                uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.findAllIntegrations()
 GET            /integrations/:id                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.findByIntegrationId(id: uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId)
-DELETE         /integrations/:id            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.deleteByIntegrationId(id: uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId)
++ nocsrf
+DELETE         /integrations/:id                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.deleteByIntegrationId(id: uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId)
+GET            /integrations                                uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.findAllIntegrations()

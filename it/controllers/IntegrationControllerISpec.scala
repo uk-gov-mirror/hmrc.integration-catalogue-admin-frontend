@@ -64,9 +64,20 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
     def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
+
+    def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] =
+      FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/iamanunknownpath")
   }
 
   "IntegrationController" when {
+
+    "DELETE [some unknown path]" should {
+      "return blah" in new Setup {
+         val response: Future[Result] = route(app, invalidPathRequest).get
+         status(response) mustBe NOT_FOUND
+         contentAsString(response) mustBe """{"errors":[{"message":"Path or Http method may be wrong. "}]}"""
+      }
+    }
 
     "GET /services/integrations/{id}" should  {
 
@@ -114,12 +125,29 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
           contentAsString(response) mustBe """{"count":0,"results":[]}"""
         }
 
-        "return 400 when using invalid platformFilter" in new Setup {
+        "return 400 when using invalid filter key" in new Setup {
+          val invalidFilterKey = "?invalidFilterKey=UNKNOWN"
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(invalidFilterKey)).get
+          status(response) mustBe 400
+          contentAsString(response) mustBe """{"errors":[{"message":"Invalid query parameter key provided. It is case sensitive"}]}"""
+        }
+
+
+      "return 400 when using invalid platformFilter" in new Setup {
         val platformFilter = "?platformFilter=UNKNOWN"
 
           val response: Future[Result] = route(app, validFindwithFilterRequest(platformFilter)).get
           status(response) mustBe 400
+          contentAsString(response) mustBe """{"errors":[{"message":"Cannot accept UNKNOWN as PlatformType"}]}"""
+        }
 
+      "return 400 when using empty platformFilter value" in new Setup {
+        val platformFilter = "?platformFilter="
+
+          val response: Future[Result] = route(app, validFindwithFilterRequest(platformFilter)).get
+          status(response) mustBe 400
+          contentAsString(response) mustBe """{"errors":[{"message":"platformType cannot be empty"}]}"""
         }
 
       "return 404 and when 404 returned from backend" in new Setup {
@@ -139,7 +167,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
           status(response) mustBe BAD_REQUEST
 
         }
-
 
      }
 
@@ -179,6 +206,13 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
         val response: Future[Result] = route(app, validDeleteIntegrationRequest(exampleIntegrationId)).get
         status(response) mustBe NO_CONTENT
+      }
+
+     "respond with 400 when non uuid id provided" in new Setup {
+
+        val response: Future[Result] = route(app, validDeleteIntegrationRequest("invalidId")).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Cannot accept invalidId as IntegrationId"}]}"""
       }
 
       "respond with 404 when deletion unsuccessful" in new Setup {

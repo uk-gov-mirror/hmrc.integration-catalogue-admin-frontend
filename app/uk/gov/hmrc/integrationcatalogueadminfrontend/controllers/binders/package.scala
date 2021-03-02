@@ -28,7 +28,7 @@ package object binders {
   private def integrationIdFromString(text: String): Either[String, IntegrationId] = {
     Try(UUID.fromString(text))
     .toOption
-    .toRight(s"Cannot accept $text as IntegrationsId")
+    .toRight(s"Cannot accept $text as IntegrationId")
     .map(IntegrationId(_))
   }
 
@@ -45,8 +45,17 @@ package object binders {
     private def handleStringToPlatformType(stringVal: String): Either[String, PlatformType] = {
     Try(PlatformType.withNameInsensitive(stringVal))
       .toOption
-      .toRight(s"Cannot accept $stringVal as PlatformType")
+      .toRight(
+        if(stringVal.nonEmpty){
+            s"Cannot accept $stringVal as PlatformType"
+        } else {
+            "platformType cannot be empty"
+        }
+        
+        )
   }
+
+
 
   implicit def platformTypeQueryStringBindable(implicit textBinder: QueryStringBindable[String]): QueryStringBindable[PlatformType] =
     new QueryStringBindable[PlatformType] {

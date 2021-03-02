@@ -20,5 +20,6 @@ object HeaderKeys{
 val platformKey: String = "x-platform-type"
 val specificationTypeKey: String = "x-specification-type"
 val publisherRefKey: String = "x-publisher-reference"
+val acceptKey: String = "Accept"
 
 }
