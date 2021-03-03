@@ -49,7 +49,7 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
                      (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
    val queryParamsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
     handleResult(
-      http.GET[IntegrationResponse](s"$externalServiceUri/integrations/find-with-filter", queryParams = queryParamsValues))
+      http.GET[IntegrationResponse](s"$externalServiceUri/integrations", queryParams = queryParamsValues))
   }
 
   def findByIntegrationId(id: IntegrationId)(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {

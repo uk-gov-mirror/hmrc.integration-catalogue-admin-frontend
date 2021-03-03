@@ -60,7 +60,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
       FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/${id.value}")
 
     def validFindwithFilterRequest(searchTerm: String): FakeRequest[AnyContentAsEmpty.type] =
-      FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/find-with-filter$searchTerm")
+      FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations$searchTerm")
 
     def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
@@ -106,7 +106,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
     }
 
-     "GET /integrations/find-with-filter" should {
+     "GET /integrations" should {
         "return 200 and integration response from backend when using searchTerm" in new Setup {
         val searchTerm = "?searchTerm=API1689"
         primeIntegrationCatalogueServiceFindWithFilterWithBody(OK, Json.toJson(IntegrationResponse(0, List.empty)).toString, searchTerm)

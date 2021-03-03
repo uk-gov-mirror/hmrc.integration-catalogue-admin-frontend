@@ -52,17 +52,6 @@ class IntegrationController @Inject()(appConfig: AppConfig,
     }
 }
 
- def findAllIntegrations: Action[AnyContent] =
-   Action.async { implicit request =>
-    integrationService.findWithFilters(List.empty, List.empty)
-     .map {
-      case Right(response) => Ok(Json.toJson(response))
-      case Left(_: NotFoundException)  => NotFound
-      case Left(error: Throwable) =>
-        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findAllIntegrations error integration-catalogue ${error.getMessage}")))))
-    }
- }
-
  def findByIntegrationId(id: IntegrationId)  =
    Action.async { implicit request =>
   integrationService.findByIntegrationId(id)map {

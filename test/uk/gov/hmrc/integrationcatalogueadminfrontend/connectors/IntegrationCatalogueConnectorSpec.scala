@@ -56,7 +56,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     val integrationId = IntegrationId(UUID.fromString("2840ce2d-03fa-46bb-84d9-0299402b7b32"))
     val searchTerm  = "API1689"
     val outboundUrl = "/integration-catalogue/apis/publish"
-    val findWithFilterlUrl = s"/integration-catalogue/integrations/find-with-filter"
+    val findWithFilterlUrl = s"/integration-catalogue/integrations"
     def deleteIntegrationsUrl(id: IntegrationId) = s"/integration-catalogue/integrations/${id.value}"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult): ScalaOngoingStubbing[Future[PublishResult]] =

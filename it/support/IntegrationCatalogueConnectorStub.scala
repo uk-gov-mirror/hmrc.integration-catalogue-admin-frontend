@@ -26,7 +26,7 @@ trait IntegrationCatalogueConnectorStub {
   val getApisUrl = "/integration-catalogue/integrations"
   def deleteintegrationByIdUrl(integrationId: String) = s"/integration-catalogue/integrations/$integrationId"
   def getIntegrationByIdUrl(id: String) = s"/integration-catalogue/integrations/$id"
-  def findWithFiltersUrl(searchTerm: String) = s"/integration-catalogue/integrations/find-with-filter$searchTerm"
+  def findWithFiltersUrl(searchTerm: String) = s"/integration-catalogue/integrations$searchTerm"
 
     def primeIntegrationCatalogueServiceFindWithFilterWithBadRequest(searchTerm: String) = {
 
