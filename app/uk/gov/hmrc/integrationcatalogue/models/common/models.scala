@@ -54,17 +54,6 @@ case class ContactInformation(name: String, emailAddress: String)
 
 case class Maintainer(name: String, slackChannel: String, contactInfo: List[ContactInformation] = List.empty)
 
-sealed trait MessageType extends EnumEntry
-
-object MessageType extends Enum[MessageType] with PlayJsonEnum[MessageType] {
-
-  val values = findValues
-
-  case object JSON extends MessageType
-  case object XML extends MessageType
-
-}
-
 sealed trait IntegrationType extends EnumEntry {
   val integrationType: String
 }

@@ -49,7 +49,6 @@ case class ApiDetail(id: IntegrationId,
                      hods: List[String] = List.empty,
                      lastUpdated: DateTime,
                      maintainer: Maintainer,
-                     messageType: MessageType,
                      version: String,
                      specificationType: SpecificationType,
                      endpoints: List[Endpoint]) extends IntegrationDetail {
