@@ -20,102 +20,86 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 import play.api.Logging
 import play.api.libs.Files
 import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogue.models._
 import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.ValidatedApiPublishRequest
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import play.api.libs.json.Writes
-import play.api.libs.json.Reads
-import play.api.libs.json.JsValue
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
+import scala.util.{Failure, Success, Try}
 
 @Singleton
-class PublishController @Inject()(
-                                   appConfig: AppConfig,
-                                   mcc: MessagesControllerComponents,
-                                   publishService: PublishService,
-                                   validatePlatformHeaderAction: ValidatePlatformHeaderAction,
-                                   validateSpecificationTypeHeaderAction: ValidateSpecificationTypeHeaderAction,
-                                   validatePublisherRefHeaderAction: ValidatePublisherRefHeaderAction,
-                                   playBodyParsers: PlayBodyParsers)
-                                 (implicit ec: ExecutionContext)
-  extends FrontendController(mcc) with Logging {
+class PublishController @Inject() (
+    appConfig: AppConfig,
+    mcc: MessagesControllerComponents,
+    publishService: PublishService,
+    validateApiPublishRequest: ValidateApiPublishRequestAction,
+    validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
+    playBodyParsers: PlayBodyParsers
+  )(implicit ec: ExecutionContext)
+    extends FrontendController(mcc)
+    with Logging {
 
   implicit val config: AppConfig = appConfig
 
-  def publishFileTransfer()= Action.async(playBodyParsers.tolerantJson) { implicit request => 
-    if (validateJsonString[FileTransferPublishRequest](request.body.toString())) {
-      val bodyVal = request.body.as[FileTransferPublishRequest]
-      publishService.publishFileTransfer(bodyVal).map(handlePublishResult) 
-    } else {
-      logger.error("Invalid request body, must be a valid publish request")
-      Future.successful(BadRequest("Invalid request body"))
+  def publishFileTransfer() =
+    (Action andThen validateAuthorizationHeaderAction).async(playBodyParsers.tolerantJson) { implicit request =>
+      if (validateJsonString[FileTransferPublishRequest](request.body.toString())) {
+        val bodyVal = request.body.as[FileTransferPublishRequest]
+        publishService.publishFileTransfer(bodyVal).map(handlePublishResult)
+      } else {
+        logger.error("Invalid request body, must be a valid publish request")
+        Future.successful(BadRequest("Invalid request body"))
+      }
     }
-  }
 
-
-  def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] =
-
-    (Action andThen
-      validatePlatformHeaderAction andThen
-      validatePublisherRefHeaderAction andThen
-      validateSpecificationTypeHeaderAction).async(playBodyParsers.multipartFormData) { implicit request =>
-      (request.headers.get(HeaderKeys.platformKey),
-        request.headers.get(HeaderKeys.specificationTypeKey),
-        request.headers.get(HeaderKeys.publisherRefKey)) match {
-        case (Some(platformType), Some(specificationType), Some(publisherRef)) =>
-          request.body.file("selectedFile") match {
-            case None =>
-              logger.info("selectedFile is missing from requestBody")
-              Future.successful(BadRequest(Json.toJson(ErrorResponse( List(ErrorResponseMessage( "selectedFile is missing from requestBody"))))))
-            case Some(selectedFile) =>
-              val convertedPlatformType = PlatformType.withNameInsensitive(platformType)
-              val convertedSpecType = SpecificationType.withNameInsensitive(specificationType)
-              val bufferedSource = Source.fromFile(selectedFile.ref.path.toFile)
-              val fileContents = bufferedSource.getLines.mkString("\r\n")
-              bufferedSource.close()
-              publishService.publishApi(publisherRef, convertedPlatformType, convertedSpecType, fileContents)
-              .map(handlePublishResult)
-          }
-        case _ =>
-          logger.info("invalid header(s) provided")
-          Future.successful(BadRequest(Json.toJson(ErrorResponse( List(ErrorResponseMessage( "Please provide valid headers"))))))
+  def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = (Action andThen
+    validateAuthorizationHeaderAction andThen
+    validateApiPublishRequest).async(playBodyParsers.multipartFormData) {
+    implicit request: ValidatedApiPublishRequest[MultipartFormData[Files.TemporaryFile]] =>
+      request.body.file("selectedFile") match {
+        case None               =>
+          logger.info("selectedFile is missing from requestBody")
+          Future.successful(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("selectedFile is missing from requestBody"))))))
+        case Some(selectedFile) =>
+          val bufferedSource = Source.fromFile(selectedFile.ref.path.toFile)
+          val fileContents = bufferedSource.getLines.mkString("\r\n")
+          bufferedSource.close()
+          publishService.publishApi(request.publisherReference, request.platformType, request.specificationType, fileContents)
+            .map(handlePublishResult)
       }
 
     }
 
 
- private def handlePublishResult(result : Either[Throwable, PublishResult] ) ={
-   result match {
-     case Right(publishResult) => {
-       publishResult.publishDetails match {
-         case Some(details) =>
-           val resultAsJson = Json.toJson(PublishDetails.toPublishResponse(details))
-           if(details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)
-         case None =>  if(publishResult.errors.nonEmpty){
-           BadRequest(Json.toJson(ErrorResponse(publishResult.errors.map(x => ErrorResponseMessage(x.message)))))
-         } else {
-           BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Unexpected response from /integration-catalogue")))))
-         }
-       }
-     }
-     case Left(errorResult) =>
-       BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unexpected response from /integration-catalogue: ${errorResult.getMessage}")))))
-   }
- }
+  private def handlePublishResult(result: Either[Throwable, PublishResult]) = {
+    result match {
+      case Right(publishResult) =>
+        publishResult.publishDetails match {
+          case Some(details) =>
+            val resultAsJson = Json.toJson(PublishDetails.toPublishResponse(details))
+            if (details.isUpdate) Ok(resultAsJson) else Created(resultAsJson)
+          case None => if (publishResult.errors.nonEmpty) {
+            BadRequest(Json.toJson(ErrorResponse(publishResult.errors.map(x => ErrorResponseMessage(x.message)))))
+          } else {
+            BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Unexpected response from /integration-catalogue")))))
+          }
+        }
+      case Left(errorResult) =>
+        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unexpected response from /integration-catalogue: ${errorResult.getMessage}")))))
+    }
+  }
 
-  private def validateJsonString[T](body: String)(implicit write: Writes[T], reads: Reads[T]) = {
+  private def validateJsonString[T](body: String)(implicit write: Writes[T], reads: Reads[T]): Boolean = {
     validateJson[T](body, body => Json.parse(body))
   }
 

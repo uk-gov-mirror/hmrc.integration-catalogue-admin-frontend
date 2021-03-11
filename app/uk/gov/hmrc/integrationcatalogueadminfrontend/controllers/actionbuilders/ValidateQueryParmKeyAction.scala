@@ -32,21 +32,16 @@ import play.api.libs.json.Json
 @Singleton
 class ValidateQueryParamKeyAction @Inject()()(implicit ec: ExecutionContext)
   extends ActionFilter[Request] with HttpErrorFunctions with Logging {
-
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
-
     val validKeys = List("platformFilter", "searchTerm")
-
     val queryParamKeys = request.queryString.keys
 
     if (!queryParamKeys.forall(validKeys.contains(_))) {
         logger.info("Invalid query parameter key provided. It is case sensitive")
         Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "Invalid query parameter key provided. It is case sensitive")))))))
     }
-    else {
-      Future.successful(None)
-    }
+    else Future.successful(None)
   }
 }

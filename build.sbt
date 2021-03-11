@@ -44,7 +44,6 @@ lazy val microservice = Project(appName, file("."))
     // ***************
     // Use the silencer plugin to suppress warnings
     // You may turn it on for `views` too to suppress warnings from unused imports in compiled twirl templates, but this will hide other warnings.
-    scalacOptions += "-P:silencer:pathFilters=routes",
     libraryDependencies ++= Seq(
       compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
       "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
@@ -60,14 +59,16 @@ lazy val microservice = Project(appName, file("."))
   .settings(resolvers += Resolver.jcenterRepo) 
   .settings(unmanagedResourceDirectories in IntegrationTest += (baseDirectory in IntegrationTest).value / "it" / "resources")
   .settings(unmanagedSourceDirectories in IntegrationTest += (baseDirectory in IntegrationTest).value / "test-common")
+  
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
+  .settings(scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification"))
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
   Seq(
     // Semicolon-separated list of regexs matching classes to exclude
     ScoverageKeys.coverageExcludedPackages := ";.*\\.domain\\.models\\..*;uk\\.gov\\.hmrc\\.BuildInfo;.*\\.Routes;.*\\.RoutesPrefix;;Module;GraphiteStartUp;.*\\.Reverse[^.]*",
-    ScoverageKeys.coverageMinimum := 93,
+    ScoverageKeys.coverageMinimum := 95,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false

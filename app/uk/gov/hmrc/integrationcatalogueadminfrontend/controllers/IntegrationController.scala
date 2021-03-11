@@ -52,14 +52,14 @@ class IntegrationController @Inject()(appConfig: AppConfig,
     }
 }
 
- def findByIntegrationId(id: IntegrationId)  =
+ def findByIntegrationId(id: IntegrationId): Action[AnyContent] =
    Action.async { implicit request =>
-  integrationService.findByIntegrationId(id)map {
-      case Right(response) => Ok(Json.toJson(response))
-      case Left(_: NotFoundException)  => NotFound
-      case Left(error: Throwable) =>
-        BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
-    }
+    integrationService.findByIntegrationId(id)map {
+        case Right(response) => Ok(Json.toJson(response))
+        case Left(_: NotFoundException)  => NotFound
+        case Left(error: Throwable) =>
+          BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
+      }
  }
 
   def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] =

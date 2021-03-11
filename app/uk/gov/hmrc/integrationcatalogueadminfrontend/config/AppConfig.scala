@@ -30,5 +30,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val defaultLanguage: Lang = Lang(en)
 
   val integrationCatalogueUrl = servicesConfig.baseUrl("integration-catalogue")
+  val authorizationKey = servicesConfig.getString("authorizationKey")
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueadminfrontend.domain
+package uk.gov.hmrc.integrationcatalogueadminfrontend.models
 
 object HeaderKeys{
 val platformKey: String = "x-platform-type"

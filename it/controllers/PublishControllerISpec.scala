@@ -28,10 +28,12 @@ import play.api.mvc._
 import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, _}
 import support.{IntegrationCatalogueConnectorStub, ServerBaseISpec}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.domain.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogue.models._
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import utils.MultipartFormDataWritable
 
@@ -41,6 +43,8 @@ import scala.concurrent.Future
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.JsValue
+import play.api.http.HeaderNames
+import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 
 class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub {
 
@@ -58,12 +62,31 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
   val url = s"http://localhost:$port/integration-catalogue-admin-frontend"
 
+  private val env = Environment.simple()
+  private val configuration = Configuration.load(env)
+
+  private val serviceConfig = new ServicesConfig(configuration)
+  private val appConfig = new AppConfig(configuration, serviceConfig)
+  private val encodedAuthHeader = "dGVzdC1hdXRoLWtleQ=="
+
+
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
+
 
   trait Setup {
     val validHeaders = List(CONTENT_TYPE -> "application/json")
-    val allValidHeaders = List(HeaderKeys.platformKey -> "CORE_IF", HeaderKeys.publisherRefKey -> "1234", HeaderKeys.specificationTypeKey -> "OAS_V3")
-    val headers: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF", HeaderKeys.publisherRefKey -> "1234", HeaderKeys.specificationTypeKey -> "OAS_V3")
+    val allValidHeaders = List(
+      HeaderKeys.platformKey -> "CORE_IF", 
+      HeaderKeys.publisherRefKey -> "1234", 
+      HeaderKeys.specificationTypeKey -> "OAS_V3",
+      HeaderNames.AUTHORIZATION -> encodedAuthHeader
+      )
+    val headers: Headers = Headers(
+      HeaderKeys.platformKey -> "CORE_IF", 
+      HeaderKeys.publisherRefKey -> "1234", 
+      HeaderKeys.specificationTypeKey -> "OAS_V3", 
+      HeaderNames.AUTHORIZATION -> encodedAuthHeader
+      )
     implicit val writer: Writeable[MultipartFormData[TemporaryFile]] = MultipartFormDataWritable.writeable
 
     val dateValue: DateTime = DateTime.parse("04/11/2020 20:27:05", DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss"));
@@ -173,9 +196,11 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       }
 
        "respond with 400 when invalid platform header" in new Setup {
-         val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "SOME_RUBBISH",
+         val invalidHeaders: Headers = Headers(
+           HeaderKeys.platformKey -> "SOME_RUBBISH",
            HeaderKeys.specificationTypeKey -> "OAS_V3",
-           HeaderKeys.publisherRefKey -> "123456")
+           HeaderKeys.publisherRefKey -> "123456",
+           HeaderNames.AUTHORIZATION -> encodedAuthHeader)
           val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
           val response: Future[Result] = route(app, request).get
@@ -186,9 +211,11 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       "respond with 400 when invalid specification type header" in new Setup {
 
-        val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF",
+        val invalidHeaders: Headers = Headers(
+          HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "SOME_RUBBISH",
-          HeaderKeys.publisherRefKey -> "123456")
+          HeaderKeys.publisherRefKey -> "123456",
+          HeaderNames.AUTHORIZATION -> encodedAuthHeader)
         val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
@@ -200,14 +227,31 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       "respond with 400 when invalid publisher ref header" in new Setup {
 
-        val invalidHeaders: Headers = Headers(HeaderKeys.platformKey -> "CORE_IF",
+        val invalidHeaders: Headers = Headers(
+          HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "OAS_V3",
-          HeaderKeys.publisherRefKey -> "")
+          HeaderKeys.publisherRefKey -> "",
+          HeaderNames.AUTHORIZATION -> encodedAuthHeader)
          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
         status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"publisher reference header is missing or invalid"}]}"""
+
+      }
+
+      "respond with 403 when invalid Authorization header" in new Setup {
+
+        val invalidHeaders: Headers = Headers(
+          HeaderKeys.platformKey -> "CORE_IF",
+          HeaderKeys.specificationTypeKey -> "OAS_V3",
+          HeaderKeys.publisherRefKey -> "123456",
+          HeaderNames.AUTHORIZATION -> "SOME_RUBBISH")
+         val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
+
+        val response: Future[Result] = route(app, request).get
+        status(response) mustBe FORBIDDEN
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
 
@@ -250,6 +294,21 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
         val response: Future[Result] = route(app, invalidFileTransferPublishRequest).get
         status(response) mustBe 400
+
+      }
+
+      "respond with 403 and error message Authorization header is missing" in new Setup{
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(Headers())).get
+        status(response) mustBe 403
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
+
+      }
+
+      "respond with 403 and error message Authorization header is invalid" in new Setup{
+        val invalidHeaders: Headers = Headers(HeaderNames.AUTHORIZATION -> "SOME_RUBBISH")
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(invalidHeaders)).get
+        status(response) mustBe 403
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
     }
