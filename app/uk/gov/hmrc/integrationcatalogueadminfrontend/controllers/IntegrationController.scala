@@ -46,7 +46,7 @@ class IntegrationController @Inject()(appConfig: AppConfig,
     integrationService.findWithFilters(searchTerm, platformFilter)
      .map {
       case Right(response) => Ok(Json.toJson(response))
-      case Left(_: NotFoundException)  => NotFound
+      case Left(_: NotFoundException)  => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"findWithFilters: The requested resource(s) could not be found.")))))
       case Left(error: Throwable) =>
         BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findWithFilters error integration-catalogue ${error.getMessage}")))))
     }
@@ -56,7 +56,7 @@ class IntegrationController @Inject()(appConfig: AppConfig,
    Action.async { implicit request =>
     integrationService.findByIntegrationId(id)map {
         case Right(response) => Ok(Json.toJson(response))
-        case Left(_: NotFoundException)  => NotFound
+        case Left(_: NotFoundException)  =>  NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"findByIntegrationId: The requested resource could not be found.")))))
         case Left(error: Throwable) =>
           BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
       }

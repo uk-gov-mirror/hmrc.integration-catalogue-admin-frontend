@@ -95,6 +95,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
         val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
         status(response) mustBe NOT_FOUND
+        contentAsString(response) mustBe """{"errors":[{"message":"findByIntegrationId: The requested resource could not be found."}]}"""
       }
 
       "return 400 when backend returns 400" in new Setup {
@@ -156,6 +157,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
           val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
           status(response) mustBe NOT_FOUND
+          contentAsString(response) mustBe """{"errors":[{"message":"findWithFilters: The requested resource(s) could not be found."}]}"""
 
         }
 
@@ -187,6 +189,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe NOT_FOUND
+        contentAsString(response) mustBe """{"errors":[{"message":"findWithFilters: The requested resource(s) could not be found."}]}"""
       }
 
       "respond with 400 when bad request returned from backend" in new Setup {
