@@ -96,7 +96,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       publisherReference = "BVD-DPS-PCPMonthly-pull",
       title = "BVD-DPS-PCPMonthly-pull",
       description = "A file transfer from Birth Verification Data (BVD) to Data Provisioning Systems (DPS)",
-      platformType = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      platformType = PlatformType.CORE_IF,
       lastUpdated =  dateValue,
       contact = ContactInformation("Core IF Team", "example@gmail.com"),
       sourceSystem = List("BVD"),

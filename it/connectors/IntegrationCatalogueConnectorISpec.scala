@@ -57,7 +57,7 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
     val integrationId: IntegrationId =  IntegrationId(UUID.fromString("b4e0c3ca-c19e-4c88-adf9-0e4af361076e"))
     val publisherReference =  "BVD-DPS-PCPMonthly-pull"
     def createBackendPublishResponse(isSuccess: Boolean, isUpdate: Boolean): PublishResult = {
-        val publishDetails = if(isSuccess) Some(PublishDetails(isUpdate, integrationId, publisherReference, PlatformType.CORE_IF_FILE_TRANSFER_FLOW)) else None
+        val publishDetails = if(isSuccess) Some(PublishDetails(isUpdate, integrationId, publisherReference, PlatformType.CORE_IF)) else None
         val publishErrors = if(isSuccess) List.empty else List(PublishError(10000, "Some Error Message"))
         PublishResult(isSuccess, publishDetails, publishErrors)
     }
@@ -68,7 +68,7 @@ class IntegrationCatalogueConnectorISpec extends ServerBaseISpec with ApiDetailT
       publisherReference = publisherReference,
       title = "BVD-DPS-PCPMonthly-pull",
       description = "A file transfer from Birth Verification Data (BVD) to Data Provisioning Systems (DPS)",
-      platformType = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      platformType = PlatformType.CORE_IF,
       lastUpdated =  dateValue,
       contact = ContactInformation("Core IF Team", "example@gmail.com"),
       sourceSystem = List("BVD"),

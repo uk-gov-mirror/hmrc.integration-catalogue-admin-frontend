@@ -44,7 +44,7 @@ trait SetUp {
       PublishResult(isSuccess = true, Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  "publisherReference", PlatformType.CORE_IF)))
 
     val expectedFileTransferPublishResult: PublishResult =
-      PublishResult(isSuccess = true, Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  "BVD-DPS-PCPMonthly-pull", PlatformType.CORE_IF_FILE_TRANSFER_FLOW)))
+      PublishResult(isSuccess = true, Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  "BVD-DPS-PCPMonthly-pull", PlatformType.CORE_IF)))
     
     val dateValue: DateTime = DateTime.parse("04/11/2020 20:27:05", DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss"));
 
@@ -53,7 +53,7 @@ trait SetUp {
       publisherReference = "BVD-DPS-PCPMonthly-pull",
       title = "BVD-DPS-PCPMonthly-pull",
       description = "A file transfer from Birth Verification Data (BVD) to Data Provisioning Systems (DPS)",
-      platformType = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      platformType = PlatformType.CORE_IF,
       lastUpdated =  dateValue,
       contact = ContactInformation("Core IF Team", "example@gmail.com"),
       sourceSystem = List("BVD"),

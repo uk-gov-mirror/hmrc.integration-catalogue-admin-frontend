@@ -80,7 +80,7 @@ trait ApiDetailTestData {
       title = "getKnownFactsName ETMP",
       description = "getKnownFactsDesc",
       lastUpdated = dateValue,
-      platform = PlatformType.CORE_IF_FILE_TRANSFER_FLOW,
+      platform = PlatformType.CORE_IF,
       maintainer = coreIfMaintainer,
       searchText = "file transfer search text",
       sourceSystem = List("source"),
