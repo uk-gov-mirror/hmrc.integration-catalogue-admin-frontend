@@ -39,12 +39,19 @@ class ValidateAuthorizationHeaderAction @Inject()(appConfig: AppConfig)(implicit
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
-     def base64Decode(stringToDecode: String): Try[String] = Try(new String(Base64.getDecoder.decode(stringToDecode), StandardCharsets.UTF_8))
 
     val authHeader = request.headers.get(HeaderNames.AUTHORIZATION).getOrElse("")
 
-    if (!authHeader.isEmpty && base64Decode(authHeader).map(_ == appConfig.authorizationKey).getOrElse(false)) Future.successful(None)
-    else Future.successful(Some(Forbidden(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
-
+    if (isAuthHeaderValid(authHeader, appConfig.authorizationKey)){
+      Future.successful(None)
+    } else {
+      Future.successful(Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
+    }
   }
+
+  private def isAuthHeaderValid(authHeader : String, expectedAuthorizationKey: String) : Boolean = {
+    def base64Decode(stringToDecode: String): Try[String] = Try(new String(Base64.getDecoder.decode(stringToDecode), StandardCharsets.UTF_8))
+
+    authHeader.nonEmpty && base64Decode(authHeader).map(_ == expectedAuthorizationKey).getOrElse(false)
+  } 
 }
