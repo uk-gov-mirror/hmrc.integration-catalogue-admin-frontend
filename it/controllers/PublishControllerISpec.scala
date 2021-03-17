@@ -45,6 +45,7 @@ import org.joda.time.format.DateTimeFormat
 import play.api.libs.json.JsValue
 import play.api.http.HeaderNames
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
+import support.AuthorizationSupport
 
 class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub {
 
@@ -67,8 +68,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
   private val serviceConfig = new ServicesConfig(configuration)
   private val appConfig = new AppConfig(configuration, serviceConfig)
-  private val encodedAuthHeader = "dGVzdC1hdXRoLWtleQ=="
-
+  private val encodedAuthHeader = AuthorizationSupport.encodedAuthHeader
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 

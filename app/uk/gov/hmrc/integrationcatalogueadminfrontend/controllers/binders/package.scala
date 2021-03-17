@@ -25,7 +25,7 @@ import play.api.mvc.QueryStringBindable
 
 package object binders {
 
-  private def integrationIdFromString(text: String): Either[String, IntegrationId] = {
+  def integrationIdFromString(text: String): Either[String, IntegrationId] = {
     Try(UUID.fromString(text))
     .toOption
     .toRight(s"Cannot accept $text as IntegrationId")

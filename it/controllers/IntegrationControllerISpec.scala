@@ -31,6 +31,8 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 import scala.concurrent.Future
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import play.api.http.HeaderNames
+import support.AuthorizationSupport
 
 class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub with ApiDetailTestData {
 
@@ -62,20 +64,23 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     def validFindwithFilterRequest(searchTerm: String): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations$searchTerm")
 
-    def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] =
+    def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
+        .withHeaders(HeaderNames.AUTHORIZATION -> AuthorizationSupport.encodedAuthHeader)
+    }
 
-    def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] =
+    def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/iamanunknownpath")
+    }
   }
 
   "IntegrationController" when {
 
     "DELETE [some unknown path]" should {
       "return blah" in new Setup {
-         val response: Future[Result] = route(app, invalidPathRequest).get
-         status(response) mustBe NOT_FOUND
-         contentAsString(response) mustBe """{"errors":[{"message":"Path or Http method may be wrong. "}]}"""
+        val response: Future[Result] = route(app, invalidPathRequest).get
+        status(response) mustBe NOT_FOUND
+        contentAsString(response) mustBe """{"errors":[{"message":"Path or Http method may be wrong. "}]}"""
       }
     }
 
@@ -88,7 +93,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         status(response) mustBe OK
         contentAsString(response) mustBe """{"_type":"uk.gov.hmrc.integrationcatalogue.models.ApiDetail","id":"e2e4ce48-29b0-11eb-adc1-0242ac120002","publisherReference":"API1689","title":"getKnownFactsName","description":"getKnownFactsDesc","platform":"CORE_IF","searchText":"Some Search Text","hods":["ETMP"],"lastUpdated":"2020-11-04T20:27:05.000+0000","maintainer":{"name":"IF Team","slackChannel":"N/A","contactInfo":[]},"version":"1.1.0","specificationType":"OAS_V3","endpoints":[{"path":"/some/url","httpMethod":"GET","summary":"some summary","description":"some description","exampleRequests":[{"name":"example request 1","jsonBody":"{\"someValue\": \"abcdefg\"}","mediaType":"application/json"}],"exampleResponses":[{"name":"example response name","jsonBody":"example response body","mediaType":"application/json"}]},{"path":"/some/url","httpMethod":"PUT","summary":"some summary","description":"some description","exampleRequests":[],"exampleResponses":[]}]}"""
       }
-
 
       "return 404 when backend returns 404" in new Setup {
        primeIntegrationCatalogueServiceGetByIdWithBody(NOT_FOUND, "", exampleApiDetail.id)
@@ -104,7 +108,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
         status(response) mustBe BAD_REQUEST
       }
-
     }
 
      "GET /integrations" should {
@@ -133,7 +136,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
           status(response) mustBe 400
           contentAsString(response) mustBe """{"errors":[{"message":"Invalid query parameter key provided. It is case sensitive"}]}"""
         }
-
 
       "return 400 when using invalid platformFilter" in new Setup {
         val platformFilter = "?platformFilter=UNKNOWN"
@@ -169,11 +171,9 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
           status(response) mustBe BAD_REQUEST
 
         }
-
      }
 
     "GET /services/integrations" should {
-
 
       "respond with 200 when api results returned from backend" in new Setup {
         primeIntegrationCatalogueServiceFindWithFilterWithBody(OK, Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString, "")
@@ -181,7 +181,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe OK
         contentAsString(response) mustBe Json.toJson(IntegrationResponse(1, List(exampleApiDetail))).toString
-
       }
 
       "respond with 404 when no results returned from backend" in new Setup {
@@ -197,8 +196,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
         val response: Future[Result] = route(app, validGetApisRequest).get
         status(response) mustBe BAD_REQUEST
-
-
       }
     }
 
@@ -212,8 +209,9 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
       }
 
      "respond with 400 when non uuid id provided" in new Setup {
+        val request = validDeleteIntegrationRequest("invalidId")
 
-        val response: Future[Result] = route(app, validDeleteIntegrationRequest("invalidId")).get
+        val response: Future[Result] = route(app, request).get
         status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Cannot accept invalidId as IntegrationId"}]}"""
       }
@@ -224,6 +222,18 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         val response: Future[Result] = route(app, validDeleteIntegrationRequest(exampleIntegrationId)).get
         status(response) mustBe NOT_FOUND
         contentAsString(response) mustBe """{"errors":[{"message":"deleteByIntegrationId: The requested resource could not be found."}]}"""
+      }
+
+      "respond with 401 when no auth header unsuccessful" in new Setup {
+        primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
+
+        val requestWithNoAuthHeader = 
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader).get
+        status(response) mustBe UNAUTHORIZED
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
       }
     }
   }

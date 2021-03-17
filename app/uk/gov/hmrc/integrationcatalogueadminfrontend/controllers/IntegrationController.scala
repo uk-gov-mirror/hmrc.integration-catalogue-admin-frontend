@@ -31,11 +31,16 @@ import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateQueryParamKeyAction
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateAuthorizationHeaderAction
+import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
+import play.api.mvc.Result
 
 @Singleton
 class IntegrationController @Inject()(appConfig: AppConfig,
                                       integrationService: IntegrationService,
                                       validateQueryParamKeyAction: ValidateQueryParamKeyAction,
+                                      validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
                                       mcc: MessagesControllerComponents)
                                  (implicit ec: ExecutionContext) extends FrontendController(mcc) with Logging {
 
@@ -62,8 +67,17 @@ class IntegrationController @Inject()(appConfig: AppConfig,
       }
  }
 
-  def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] =
-    Action.async { implicit request =>
+  def deleteByIntegrationId(integrationId: String) : Action[AnyContent] = {
+      (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
+
+        binders.integrationIdFromString(integrationId).map(deleteByIntegrationId) match {
+          case Right(result) => result
+          case Left(errorMessage) => Future.successful(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(errorMessage))))))
+        }
+      }
+  }
+
+  private def deleteByIntegrationId(integrationId: IntegrationId)(implicit hc: HeaderCarrier) : Future[Result] = {
     integrationService.deleteByIntegrationId(integrationId).map {
       case true => NoContent
       case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
