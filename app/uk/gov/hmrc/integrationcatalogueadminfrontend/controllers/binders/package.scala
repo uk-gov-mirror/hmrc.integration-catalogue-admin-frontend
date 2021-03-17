@@ -25,11 +25,16 @@ import play.api.mvc.QueryStringBindable
 
 package object binders {
 
-  private def integrationIdFromString(text: String): Either[String, IntegrationId] = {
-    Try(UUID.fromString(text))
+  def integrationIdFromString(text: String): Either[String, IntegrationId] = {
+    println(s"integrationId: $text")
+
+    val x = Try(UUID.fromString(text))
     .toOption
     .toRight(s"Cannot accept $text as IntegrationId")
     .map(IntegrationId(_))
+
+    println(s"x: $x")
+    x
   }
 
   implicit def integrationIdPathBinder(implicit textBinder: PathBindable[String]): PathBindable[IntegrationId] = new PathBindable[IntegrationId] {

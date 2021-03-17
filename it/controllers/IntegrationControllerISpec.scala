@@ -31,6 +31,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 import scala.concurrent.Future
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import play.api.http.HeaderNames
 
 class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub with ApiDetailTestData {
 
@@ -62,11 +63,15 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     def validFindwithFilterRequest(searchTerm: String): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations$searchTerm")
 
-    def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] =
+    
+    def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
+        .withHeaders(HeaderNames.AUTHORIZATION -> "dGVzdC1hdXRoLWtleQ==")
+    }
 
-    def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] =
+    def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/iamanunknownpath")
+    }
   }
 
   "IntegrationController" when {
@@ -74,7 +79,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     "DELETE [some unknown path]" should {
       "return blah" in new Setup {
          val response: Future[Result] = route(app, invalidPathRequest).get
-         status(response) mustBe NOT_FOUND
+        //  status(response) mustBe NOT_FOUND
          contentAsString(response) mustBe """{"errors":[{"message":"Path or Http method may be wrong. "}]}"""
       }
     }
@@ -213,7 +218,13 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
      "respond with 400 when non uuid id provided" in new Setup {
 
-        val response: Future[Result] = route(app, validDeleteIntegrationRequest("invalidId")).get
+        // Invalid with auth header
+        //val request = validDeleteIntegrationRequest("invalidId")
+        
+        // TODO: Invalid with no auth header
+        val request = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/invalidId")
+
+        val response: Future[Result] = route(app, request).get
         status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Cannot accept invalidId as IntegrationId"}]}"""
       }
@@ -224,6 +235,18 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         val response: Future[Result] = route(app, validDeleteIntegrationRequest(exampleIntegrationId)).get
         status(response) mustBe NOT_FOUND
         contentAsString(response) mustBe """{"errors":[{"message":"deleteByIntegrationId: The requested resource could not be found."}]}"""
+      }
+
+      "respond with 401 when no auth header unsuccessful" in new Setup {
+        primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
+
+        val requestWithNoAuthHeader = 
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader).get
+        status(response) mustBe UNAUTHORIZED
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
       }
     }
   }

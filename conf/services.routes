@@ -12,3 +12,4 @@ GET            /integrations                                uk.gov.hmrc.integrat
 GET            /integrations/:id                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.findByIntegrationId(id: uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId)
 + nocsrf
 DELETE         /integrations/:id                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.deleteByIntegrationId(id: uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId)
+# DELETE         /integrations/:id                            uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.IntegrationController.deleteByIntegrationId(id: String)
