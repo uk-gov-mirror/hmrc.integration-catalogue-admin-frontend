@@ -257,17 +257,17 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
-    "return 400 when Authorization not set in header" in new Setup {
+    "return 401 when Authorization not set in header" in new Setup {
       val result: Future[Result] = callPublish(None, validHeaders.filterNot(_._1.equals(HeaderNames.AUTHORIZATION)), "selectedFile", "text.txt")
 
-      status(result) shouldBe FORBIDDEN
+      status(result) shouldBe UNAUTHORIZED
 
       val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("Authorisation failed"))))
 
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
-    "return 400 when Authorization is invalid in header" in new Setup {
+    "return 401 when Authorization is invalid in header" in new Setup {
       val invalidHeaders = Seq(
         HeaderKeys.platformKey -> PlatformType.CORE_IF.toString,
         HeaderKeys.specificationTypeKey -> "OAS_V3",
@@ -277,12 +277,11 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       val result: Future[Result] = callPublish(None, invalidHeaders, "selectedFile", "text.txt")
 
-      status(result) shouldBe FORBIDDEN
+      status(result) shouldBe UNAUTHORIZED
 
       val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("Authorisation failed"))))
 
       contentAsJson(result) shouldBe jsErrorResponse
     }
-
   }
 }

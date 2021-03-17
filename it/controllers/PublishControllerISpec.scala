@@ -156,20 +156,20 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 201 when valid request and a create" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validApiPublishRequest).get
-        status(response) mustBe 201
+        status(response) mustBe CREATED
         // check body
       }
 
       "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validApiPublishRequest).get
-        status(response) mustBe 400
+        status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
 
       }
@@ -177,17 +177,17 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 200 when valid request and an update" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validApiPublishRequest).get
-        status(response) mustBe 200
+        status(response) mustBe OK
 
       }
 
       "respond with 400 from BodyParser when invalid body is sent" in new Setup {
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
 
         val response: Future[Result] = route(app, invalidPublishRequest).get
@@ -240,7 +240,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       }
 
-      "respond with 403 when invalid Authorization header" in new Setup {
+      "respond with 401 when invalid Authorization header" in new Setup {
 
         val invalidHeaders: Headers = Headers(
           HeaderKeys.platformKey -> "CORE_IF",
@@ -250,7 +250,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
-        status(response) mustBe FORBIDDEN
+        status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
@@ -262,20 +262,20 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 201 when valid request and a create" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validFileTransferPublishRequest).get
-        status(response) mustBe 201
+        status(response) mustBe CREATED
         // check body
       }
 
       "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validFileTransferPublishRequest).get
-        status(response) mustBe 400
+        status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
 
       }
@@ -283,31 +283,31 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 200 when valid request and an update" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
-        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", 200, Json.toJson(backendResponse).toString)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
         val response: Future[Result] = route(app, validFileTransferPublishRequest).get
-        status(response) mustBe 200
+        status(response) mustBe OK
 
       }
 
        "respond with 400 when invalid json is sent" in new Setup{
 
         val response: Future[Result] = route(app, invalidFileTransferPublishRequest).get
-        status(response) mustBe 400
+        status(response) mustBe BAD_REQUEST
 
       }
 
-      "respond with 403 and error message Authorization header is missing" in new Setup{
+      "respond with 401 and error message Authorization header is missing" in new Setup{
         val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(Headers())).get
-        status(response) mustBe 403
+        status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
 
-      "respond with 403 and error message Authorization header is invalid" in new Setup{
+      "respond with 401 and error message Authorization header is invalid" in new Setup{
         val invalidHeaders: Headers = Headers(HeaderNames.AUTHORIZATION -> "SOME_RUBBISH")
         val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(invalidHeaders)).get
-        status(response) mustBe 403
+        status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
