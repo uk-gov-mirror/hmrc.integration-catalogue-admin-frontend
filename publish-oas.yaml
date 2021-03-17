@@ -240,7 +240,6 @@ components:
       type: string
       enum:
         - CORE_IF
-        - CORE_IF_FILE_TRANSFER_FLOW
         - API_PLATFORM
         - DES
         - CMA
