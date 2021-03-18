@@ -36,14 +36,11 @@ class JsonOrHtmlErrorHandler @Inject()(environment: Environment, htmlErrorHandle
 
      if (!request.path.contains("""/services""")) {
         htmlErrorHandler.onClientError(request, statusCode, message)
-    } 
+    }
     else {
       val errorMessage = statusCode match {
         case NOT_FOUND  => s"Path or Http method may be wrong. $message"
-        case _ => {
-          println(s"message: $message ($statusCode)")
-          message
-        }
+        case _ => message
       }
       Future.successful(Results.Status(statusCode)(Json.toJson(ErrorResponse(List(ErrorResponseMessage(errorMessage))))))
     }

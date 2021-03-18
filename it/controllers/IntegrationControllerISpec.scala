@@ -79,7 +79,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     "DELETE [some unknown path]" should {
       "return blah" in new Setup {
          val response: Future[Result] = route(app, invalidPathRequest).get
-        //  status(response) mustBe NOT_FOUND
+         status(response) mustBe NOT_FOUND
          contentAsString(response) mustBe """{"errors":[{"message":"Path or Http method may be wrong. "}]}"""
       }
     }
@@ -218,10 +218,6 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
      "respond with 400 when non uuid id provided" in new Setup {
 
-        // Invalid with auth header
-        //val request = validDeleteIntegrationRequest("invalidId")
-        
-        // TODO: Invalid with no auth header
         val request = FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/invalidId")
 
         val response: Future[Result] = route(app, request).get
@@ -240,7 +236,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
       "respond with 401 when no auth header unsuccessful" in new Setup {
         primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
 
-        val requestWithNoAuthHeader = 
+        val requestWithNoAuthHeader =
           FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
 
         val response: Future[Result] = route(app, requestWithNoAuthHeader).get

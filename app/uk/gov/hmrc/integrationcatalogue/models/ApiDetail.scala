@@ -29,6 +29,7 @@ sealed trait IntegrationDetail {
     def lastUpdated: DateTime
     def maintainer : Maintainer
     def integrationType: IntegrationType
+    def score: Option[Double]
 }
 
 case class Example(name: String, jsonBody: String, mediaType: Option[String])
@@ -49,6 +50,7 @@ case class ApiDetail(id: IntegrationId,
                      hods: List[String] = List.empty,
                      lastUpdated: DateTime,
                      maintainer: Maintainer,
+                     score: Option[Double] = None,
                      version: String,
                      specificationType: SpecificationType,
                      endpoints: List[Endpoint]) extends IntegrationDetail {
@@ -64,6 +66,7 @@ case class FileTransferDetail(id: IntegrationId, // Ignore
                               searchText: String, // Ignore
                               lastUpdated: DateTime,
                               maintainer: Maintainer,
+                              score: Option[Double] = None,
                               sourceSystem: List[String],
                               targetSystem: List[String],
                               fileTransferPattern: String) extends IntegrationDetail {
