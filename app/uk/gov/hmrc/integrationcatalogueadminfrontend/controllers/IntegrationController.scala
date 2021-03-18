@@ -31,11 +31,14 @@ import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateQueryParamKeyAction
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateAuthorizationHeaderAction
+
 
 @Singleton
 class IntegrationController @Inject()(appConfig: AppConfig,
                                       integrationService: IntegrationService,
                                       validateQueryParamKeyAction: ValidateQueryParamKeyAction,
+                                      validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
                                       mcc: MessagesControllerComponents)
                                  (implicit ec: ExecutionContext) extends FrontendController(mcc) with Logging {
 
@@ -63,10 +66,10 @@ class IntegrationController @Inject()(appConfig: AppConfig,
  }
 
   def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] =
-    Action.async { implicit request =>
-    integrationService.deleteByIntegrationId(integrationId).map {
-      case true => NoContent
-      case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
+    (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
+      integrationService.deleteByIntegrationId(integrationId).map {
+        case true => NoContent
+        case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
+      }
     }
-  }
 }

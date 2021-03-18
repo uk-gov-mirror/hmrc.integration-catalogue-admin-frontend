@@ -44,7 +44,7 @@ class ValidateAuthorizationHeaderAction @Inject()(appConfig: AppConfig)(implicit
     val authHeader = request.headers.get(HeaderNames.AUTHORIZATION).getOrElse("")
 
     if (!authHeader.isEmpty && base64Decode(authHeader).map(_ == appConfig.authorizationKey).getOrElse(false)) Future.successful(None)
-    else Future.successful(Some(Forbidden(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
+    else Future.successful(Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
 
   }
 }

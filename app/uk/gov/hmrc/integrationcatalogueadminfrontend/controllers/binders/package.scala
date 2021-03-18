@@ -38,7 +38,7 @@ package object binders {
     }
 
     override def unbind(key: String, integrationId: IntegrationId): String = {
-      integrationId.value.toString
+      textBinder.unbind(key, integrationId.value.toString)
     }
   }
 
@@ -60,14 +60,14 @@ package object binders {
   implicit def platformTypeQueryStringBindable(implicit textBinder: QueryStringBindable[String]): QueryStringBindable[PlatformType] =
     new QueryStringBindable[PlatformType] {
       override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, PlatformType]] = {
-        textBinder.bind("platformFilter", params).map {
+        textBinder.bind(key, params).map {
           case Right(platform) => handleStringToPlatformType(platform)
           case Left(_) => Left("Unable to bind an platform") // unknown how we can test this scenario
         }
       }
 
       override def unbind(key: String, platform: PlatformType): String = {
-        textBinder.unbind("platformFilter", platform.toString)
+        textBinder.unbind(key, platform.toString)
       }
     }
 
