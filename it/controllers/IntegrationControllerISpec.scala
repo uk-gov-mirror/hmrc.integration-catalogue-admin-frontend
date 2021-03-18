@@ -156,22 +156,22 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
           contentAsString(response) mustBe """{"errors":[{"message":"platformType cannot be empty"}]}"""
         }
 
-      "return 404 and when 404 returned from backend" in new Setup {
+      "return 500 and when 404 returned from backend" in new Setup {
         val searchTerm = "?searchTerm=API1689"
         primeIntegrationCatalogueServiceFindWithFilterWithBody(NOT_FOUND, "", searchTerm)
 
           val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
-          status(response) mustBe NOT_FOUND
-          contentAsString(response) mustBe """{"errors":[{"message":"findWithFilters: The requested resource(s) could not be found."}]}"""
+          status(response) mustBe INTERNAL_SERVER_ERROR
+          contentAsString(response) mustBe """{"errors":[{"message":"Unable to process your request"}]}"""
 
         }
 
-      "return 400 and when 400 returned from backend" in new Setup {
+      "return 500 and when 400 returned from backend" in new Setup {
         val searchTerm = "?searchTerm=API1689"
         primeIntegrationCatalogueServiceFindWithFilterWithBody(BAD_REQUEST, "", searchTerm)
 
           val response: Future[Result] = route(app, validFindwithFilterRequest(searchTerm)).get
-          status(response) mustBe BAD_REQUEST
+          status(response) mustBe INTERNAL_SERVER_ERROR
 
         }
 
@@ -189,20 +189,20 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
       }
 
-      "respond with 404 when no results returned from backend" in new Setup {
+      "respond with 500 when 404 returned from backend" in new Setup {
         primeIntegrationCatalogueServiceFindWithFilterWithBody(NOT_FOUND, "", "")
 
         val response: Future[Result] = route(app, validGetApisRequest).get
-        status(response) mustBe NOT_FOUND
-        contentAsString(response) mustBe """{"errors":[{"message":"findWithFilters: The requested resource(s) could not be found."}]}"""
+        status(response) mustBe INTERNAL_SERVER_ERROR
+        contentAsString(response) mustBe """{"errors":[{"message":"Unable to process your request"}]}"""
       }
 
-      "respond with 400 when bad request returned from backend" in new Setup {
+      "respond with 500 when bad request returned from backend" in new Setup {
         primeIntegrationCatalogueServiceFindWithFilterWithBody(BAD_REQUEST, "", "")
 
         val response: Future[Result] = route(app, validGetApisRequest).get
-        status(response) mustBe BAD_REQUEST
-
+        status(response) mustBe INTERNAL_SERVER_ERROR
+        contentAsString(response) mustBe """{"errors":[{"message":"Unable to process your request"}]}"""
 
       }
     }
