@@ -5,20 +5,19 @@ import sbt._
 
 object AppDependencies {
 
-  lazy val enumeratumVersion = "1.5.12"
+  lazy val enumeratumVersion = "1.6.2"
 
   val compile = Seq(
-    "uk.gov.hmrc"                     %% "bootstrap-frontend-play-27" % "3.3.0",
-    "uk.gov.hmrc"                     %% "play-frontend-hmrc"         % "0.37.0-play-27",
-    "uk.gov.hmrc"                     %% "play-frontend-govuk"        % "0.60.0-play-27",
-    "uk.gov.hmrc"                     %% "play-language"              % "4.7.0-play-27",
+    "uk.gov.hmrc"                     %% "bootstrap-frontend-play-27" % "3.4.0",
+    "uk.gov.hmrc"                     %% "play-frontend-hmrc"         % "0.51.0-play-27",
+    "uk.gov.hmrc"                     %% "play-frontend-govuk"        % "0.65.0-play-27",
     "com.beachape"                    %% "enumeratum-play-json"       % enumeratumVersion,
-    "com.fasterxml.jackson.core"       % "jackson-core"               % "2.11.1",
-    "com.fasterxml.jackson.core"       % "jackson-annotations"        % "2.11.1",
-    "com.fasterxml.jackson.core"       % "jackson-databind"           % "2.11.1",
-    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % "2.11.1",
+    "com.fasterxml.jackson.core"       % "jackson-core"               % "2.12.2",
+    "com.fasterxml.jackson.core"       % "jackson-annotations"        % "2.12.2",
+    "com.fasterxml.jackson.core"       % "jackson-databind"           % "2.12.2",
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % "2.12.2",
     "com.typesafe.play"               %% "play-json-joda"             % "2.9.2",
-    "org.typelevel"                   %% "cats-core"                  % "2.1.1"
+    "org.typelevel"                   %% "cats-core"                  % "2.4.2"
   )
 
   val test = Seq(
