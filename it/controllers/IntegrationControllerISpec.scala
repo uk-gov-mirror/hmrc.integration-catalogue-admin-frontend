@@ -32,6 +32,7 @@ import scala.concurrent.Future
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import play.api.http.HeaderNames
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 
 class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with IntegrationCatalogueConnectorStub with ApiDetailTestData {
 
@@ -53,6 +54,12 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
   trait Setup {
 
+    private val encodedMasterAuthKey = "dGVzdC1hdXRoLWtleQ=="
+    private val encodedCoreIfAuthKey = "c29tZUtleTM="
+    val coreIfAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedCoreIfAuthKey)
+    val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
+    val masterKeyHeader = List(HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
+
     val exampleIntegrationId = "2840ce2d-03fa-46bb-84d9-0299402b7b32"
     val validGetApisRequest: FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/integrations")
@@ -66,7 +73,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
     
     def validDeleteIntegrationRequest(integrationId: String): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
-        .withHeaders(HeaderNames.AUTHORIZATION -> "dGVzdC1hdXRoLWtleQ==")
+        .withHeaders(masterKeyHeader : _*)
     }
 
     def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] = {
@@ -233,16 +240,40 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         contentAsString(response) mustBe """{"errors":[{"message":"deleteByIntegrationId: The requested resource could not be found."}]}"""
       }
 
-      "respond with 401 when no auth header unsuccessful" in new Setup {
+      "respond with 401 when no auth header but platform type header is present" in new Setup {
         primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
 
         val requestWithNoAuthHeader =
           FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
 
-        val response: Future[Result] = route(app, requestWithNoAuthHeader).get
+        val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfPlatformTypeHeader : _*)).get
         status(response) mustBe UNAUTHORIZED
 
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
+      }
+
+      "respond with 400 when auth header present but platform type header is missing" in new Setup {
+        primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
+
+        val requestWithNoAuthHeader =
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader : _*)).get
+        status(response) mustBe BAD_REQUEST
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+      }
+
+      "respond with 400 when auth header present but platform type header is invalid" in new Setup {
+        primeIntegrationCatalogueServiceDelete(exampleIntegrationId, NOT_FOUND)
+
+        val requestWithNoAuthHeader =
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader ++ List(HeaderKeys.platformKey -> "INVALID_PLATFORM"): _*)).get
+        status(response) mustBe BAD_REQUEST
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
       }
     }
   }

@@ -85,14 +85,6 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
       val masterKeyHeader = List(HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
 
-    val allValidHeaders = List(
-      HeaderKeys.platformKey -> "CORE_IF", 
-      HeaderKeys.publisherRefKey -> "1234", 
-      HeaderKeys.specificationTypeKey -> "OAS_V3",
-      HeaderNames.AUTHORIZATION -> encodedMasterAuthKey
-      )
-
-
     val headersWithMasterAuthKey: Headers = Headers(
       HeaderKeys.platformKey -> "CORE_IF", 
       HeaderKeys.publisherRefKey -> "1234", 
