@@ -20,6 +20,8 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.i18n.Lang
+import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType._
+import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
@@ -31,5 +33,14 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val integrationCatalogueUrl = servicesConfig.baseUrl("integration-catalogue")
   val authorizationKey = servicesConfig.getString("authorizationKey")
+  val cmaAauthorizationKey = servicesConfig.getString("auth.authKey.cma")
+  val apiPlatformAauthorizationKey = servicesConfig.getString("auth.authKey.apiPlatform")
+  val coreIfAauthorizationKey = servicesConfig.getString("auth.authKey.coreIF")
+  val desAauthorizationKey = servicesConfig.getString("auth.authKey.DES")
+
+  val authPlatformMap: Map[PlatformType, String] = Map (CMA -> cmaAauthorizationKey,
+                                                        API_PLATFORM -> apiPlatformAauthorizationKey,
+                                                        CORE_IF -> coreIfAauthorizationKey,
+                                                        DES -> desAauthorizationKey)
 
 }
