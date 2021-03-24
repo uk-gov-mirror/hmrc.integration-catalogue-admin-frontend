@@ -69,6 +69,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
   private val appConfig = new AppConfig(configuration, serviceConfig)
   private val encodedMasterAuthKey = "dGVzdC1hdXRoLWtleQ=="
   private val encodedCoreIfAuthKey = "c29tZUtleTM="
+  private val encodedApiPlatformAuthKey = "c29tZUtleTI="
 
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
@@ -83,6 +84,8 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       val coreIfAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedCoreIfAuthKey)
       val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
+      val apiPlatformPlatformTypeHeader =  List(HeaderKeys.platformKey -> "API_PLATFORM")
+      val apiPlatformAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedApiPlatformAuthKey)
       val masterKeyHeader = List(HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
 
     val headersWithMasterAuthKey: Headers = Headers(
@@ -330,6 +333,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
         val response: Future[Result] = route(app, invalidFileTransferPublishRequest).get
         status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Invalid request body"}]}"""
 
       }
 
@@ -352,6 +356,14 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(invalidHeaders)).get
         status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
+
+      }
+
+       "respond with 400 and error message when platform type in header is different to request payload" in new Setup{
+   
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders((apiPlatformAuthHeader ++ apiPlatformPlatformTypeHeader) : _*)).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Invalid request body - platform type mismatch"}]}"""
 
       }
     }

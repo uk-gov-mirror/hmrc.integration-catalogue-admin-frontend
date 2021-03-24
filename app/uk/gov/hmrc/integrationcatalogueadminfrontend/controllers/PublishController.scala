@@ -33,6 +33,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 
 @Singleton
 class PublishController @Inject() (
@@ -51,11 +52,17 @@ class PublishController @Inject() (
   def publishFileTransfer(): Action[JsValue] =
     (Action andThen validateAuthorizationHeaderAction).async(playBodyParsers.tolerantJson) { implicit request =>
       validateAndExtractJsonString[FileTransferPublishRequest](request.body.toString()) match {
-        case Some(validBody) =>  publishService.publishFileTransfer(validBody).map(handlePublishResult)
+        case Some(validBody) => if(validatePlatformTypesMatch(validBody))publishService.publishFileTransfer(validBody).map(handlePublishResult)
+          else Future.successful(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Invalid request body - platform type mismatch"))))))
         case None => logger.error("Invalid request body, must be a valid publish request")
-          Future.successful(BadRequest("Invalid request body"))
+          Future.successful(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Invalid request body"))))))
       }
     }
+
+  private def validatePlatformTypesMatch(fileTransferRequest: FileTransferPublishRequest)(implicit request: Request[JsValue])={
+    val platformHeader = request.headers.get(HeaderKeys.platformKey).getOrElse("")
+    fileTransferRequest.platformType.entryName.equalsIgnoreCase(platformHeader)
+  } 
 
   def publishApi(): Action[MultipartFormData[Files.TemporaryFile]] = (Action andThen
     validateAuthorizationHeaderAction andThen
