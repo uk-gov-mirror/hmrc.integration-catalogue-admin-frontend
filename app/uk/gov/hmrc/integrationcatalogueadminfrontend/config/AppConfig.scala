@@ -31,16 +31,16 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val cy: String            = "cy"
   val defaultLanguage: Lang = Lang(en)
 
-  val integrationCatalogueUrl = servicesConfig.baseUrl("integration-catalogue")
-  val authorizationKey = servicesConfig.getString("authorizationKey")
-  val cmaAauthorizationKey = servicesConfig.getString("auth.authKey.cma")
-  val apiPlatformAauthorizationKey = servicesConfig.getString("auth.authKey.apiPlatform")
-  val coreIfAauthorizationKey = servicesConfig.getString("auth.authKey.coreIF")
-  val desAauthorizationKey = servicesConfig.getString("auth.authKey.DES")
+  val integrationCatalogueUrl: String = servicesConfig.baseUrl("integration-catalogue")
+  val authorizationKey: String = servicesConfig.getString("authorizationKey")
+  val cmaAuthorizationKey: String = servicesConfig.getString("auth.authKey.cma")
+  val apiPlatformAuthorizationKey: String = servicesConfig.getString("auth.authKey.apiPlatform")
+  val coreIfAuthorizationKey: String = servicesConfig.getString("auth.authKey.coreIF")
+  val desAuthorizationKey: String = servicesConfig.getString("auth.authKey.DES")
 
-  val authPlatformMap: Map[PlatformType, String] = Map (CMA -> cmaAauthorizationKey,
-                                                        API_PLATFORM -> apiPlatformAauthorizationKey,
-                                                        CORE_IF -> coreIfAauthorizationKey,
-                                                        DES -> desAauthorizationKey)
+  val authPlatformMap: Map[PlatformType, String] = Map (CMA -> cmaAuthorizationKey,
+                                                        API_PLATFORM -> apiPlatformAuthorizationKey,
+                                                        CORE_IF -> coreIfAuthorizationKey,
+                                                        DES -> desAuthorizationKey)
 
 }
