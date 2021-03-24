@@ -67,7 +67,9 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
   private val serviceConfig = new ServicesConfig(configuration)
   private val appConfig = new AppConfig(configuration, serviceConfig)
-  private val encodedAuthHeader = "dGVzdC1hdXRoLWtleQ=="
+  private val encodedMasterAuthKey = "dGVzdC1hdXRoLWtleQ=="
+  private val encodedCoreIfAuthKey = "c29tZUtleTM="
+  private val encodedApiPlatformAuthKey = "c29tZUtleTI="
 
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
@@ -75,17 +77,22 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
   trait Setup {
     val validHeaders = List(CONTENT_TYPE -> "application/json")
-    val allValidHeaders = List(
-      HeaderKeys.platformKey -> "CORE_IF", 
+    val basePublishHeaders = List(
       HeaderKeys.publisherRefKey -> "1234", 
-      HeaderKeys.specificationTypeKey -> "OAS_V3",
-      HeaderNames.AUTHORIZATION -> encodedAuthHeader
+      HeaderKeys.specificationTypeKey -> "OAS_V3"
       )
-    val headers: Headers = Headers(
+
+      val coreIfAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedCoreIfAuthKey)
+      val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
+      val apiPlatformPlatformTypeHeader =  List(HeaderKeys.platformKey -> "API_PLATFORM")
+      val apiPlatformAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedApiPlatformAuthKey)
+      val masterKeyHeader = List(HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
+
+    val headersWithMasterAuthKey: Headers = Headers(
       HeaderKeys.platformKey -> "CORE_IF", 
       HeaderKeys.publisherRefKey -> "1234", 
       HeaderKeys.specificationTypeKey -> "OAS_V3", 
-      HeaderNames.AUTHORIZATION -> encodedAuthHeader
+      HeaderNames.AUTHORIZATION -> encodedMasterAuthKey
       )
     implicit val writer: Writeable[MultipartFormData[TemporaryFile]] = MultipartFormDataWritable.writeable
 
@@ -112,12 +119,12 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
     val multipartBody: MultipartFormData[TemporaryFile] = MultipartFormData[TemporaryFile](dataParts = Map.empty, files = Seq(filePart), badParts = Nil)
 
-    val validApiPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, multipartBody)
+    val validApiPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", Headers(basePublishHeaders: _*), multipartBody)
     
-    val validFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", headers, Json.toJson(fileTransferPublishRequestObj))
+    val validFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", Headers(basePublishHeaders: _*), Json.toJson(fileTransferPublishRequestObj))
 
      
-    val invalidFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", headers, Json.toJson("{}"))
+    val invalidFileTransferPublishRequest: FakeRequest[JsValue] = FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/filetransfers/publish", headersWithMasterAuthKey, Json.toJson("{}"))
 
 
     val invalidFilePart =
@@ -131,7 +138,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       MultipartFormData[TemporaryFile](dataParts = Map.empty, files = Seq(invalidFilePart), badParts = Nil)
 
     val invalidPublishRequest: FakeRequest[MultipartFormData[TemporaryFile]] =
-      FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headers, invalidMultipartBody)
+      FakeRequest(Helpers.PUT, "/integration-catalogue-admin-frontend/services/apis/publish", headersWithMasterAuthKey, invalidMultipartBody)
 
 
     def createBackendPublishResponse(isSuccess: Boolean, isUpdate: Boolean): PublishResult = {
@@ -153,14 +160,46 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
     "PUT /services/api/publish" should {
 
-      "respond with 201 when valid request and a create" in new Setup{
+      "respond with 201 when using master auth key and valid request then do a create" in new Setup{
 
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validApiPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders((masterKeyHeader ++ coreIfPlatformTypeHeader) : _*)).get
         status(response) mustBe CREATED
         // check body
+      }
+
+      "respond with 201 when using CORE_IF platform auth key and valid request then do a create" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders((coreIfAuthHeader ++ coreIfPlatformTypeHeader) : _*)).get
+        status(response) mustBe CREATED
+        // check body
+      }
+
+      "respond with 400 when platform auth key is provided but platform type header is missing" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders(coreIfAuthHeader : _*)).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+
+      }
+
+      "respond with 400 when platform auth key is provided but platform type header is invalid" in new Setup{
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
+
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders(coreIfAuthHeader ++ List(HeaderKeys.platformKey -> "SOMEINVALIDPLATFORM"): _*)).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+
       }
 
       "respond with 400 and list of errors when backend returns isSuccess is false" in new Setup{
@@ -168,7 +207,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validApiPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders((masterKeyHeader ++ coreIfPlatformTypeHeader) : _*)).get
         status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
 
@@ -179,7 +218,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validApiPublishRequest).get
+        val response: Future[Result] = route(app, validApiPublishRequest.withHeaders((masterKeyHeader ++ coreIfPlatformTypeHeader) : _*)).get
         status(response) mustBe OK
 
       }
@@ -200,7 +239,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
            HeaderKeys.platformKey -> "SOME_RUBBISH",
            HeaderKeys.specificationTypeKey -> "OAS_V3",
            HeaderKeys.publisherRefKey -> "123456",
-           HeaderNames.AUTHORIZATION -> encodedAuthHeader)
+           HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
           val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
           val response: Future[Result] = route(app, request).get
@@ -215,7 +254,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
           HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "SOME_RUBBISH",
           HeaderKeys.publisherRefKey -> "123456",
-          HeaderNames.AUTHORIZATION -> encodedAuthHeader)
+          HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
         val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
@@ -231,7 +270,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
           HeaderKeys.platformKey -> "CORE_IF",
           HeaderKeys.specificationTypeKey -> "OAS_V3",
           HeaderKeys.publisherRefKey -> "",
-          HeaderNames.AUTHORIZATION -> encodedAuthHeader)
+          HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
         val response: Future[Result] = route(app, request).get
@@ -264,7 +303,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders((coreIfPlatformTypeHeader ++ masterKeyHeader) : _*)).get
         status(response) mustBe CREATED
         // check body
       }
@@ -274,7 +313,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = false, isUpdate = false)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders((coreIfPlatformTypeHeader ++ masterKeyHeader) : _*)).get
         status(response) mustBe BAD_REQUEST
         contentAsString(response) mustBe """{"errors":[{"message":"Some Error Message"}]}"""
 
@@ -285,7 +324,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
         val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = true)
         primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/filetransfer/publish", OK, Json.toJson(backendResponse).toString)
 
-        val response: Future[Result] = route(app, validFileTransferPublishRequest).get
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders((coreIfPlatformTypeHeader ++ masterKeyHeader) : _*)).get
         status(response) mustBe OK
 
       }
@@ -294,21 +333,37 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
         val response: Future[Result] = route(app, invalidFileTransferPublishRequest).get
         status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Invalid request body"}]}"""
 
       }
 
       "respond with 401 and error message Authorization header is missing" in new Setup{
-        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(Headers())).get
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(coreIfPlatformTypeHeader : _*)).get
         status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
 
       }
 
+      "respond with 400 and error message platform type header is missing" in new Setup{
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(coreIfAuthHeader : _*)).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+
+      }
+
       "respond with 401 and error message Authorization header is invalid" in new Setup{
-        val invalidHeaders: Headers = Headers(HeaderNames.AUTHORIZATION -> "SOME_RUBBISH")
+        val invalidHeaders: Headers = Headers(HeaderNames.AUTHORIZATION -> "SOME_RUBBISH", HeaderKeys.platformKey -> "CORE_IF")
         val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(invalidHeaders)).get
         status(response) mustBe UNAUTHORIZED
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed"}]}"""
+
+      }
+
+       "respond with 400 and error message when platform type in header is different to request payload" in new Setup{
+   
+        val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders((apiPlatformAuthHeader ++ apiPlatformPlatformTypeHeader) : _*)).get
+        status(response) mustBe BAD_REQUEST
+        contentAsString(response) mustBe """{"errors":[{"message":"Invalid request body - platform type mismatch"}]}"""
 
       }
     }

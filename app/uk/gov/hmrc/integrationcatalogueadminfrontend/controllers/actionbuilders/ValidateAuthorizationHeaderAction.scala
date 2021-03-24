@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders
 
-
 import play.api.http.HeaderNames
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
@@ -31,20 +30,44 @@ import play.api.libs.json.Json
 import scala.util.Try
 import java.util.Base64
 import java.nio.charset.StandardCharsets
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 
 @Singleton
-class ValidateAuthorizationHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateAuthorizationHeaderAction @Inject() (appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
 
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
-     def base64Decode(stringToDecode: String): Try[String] = Try(new String(Base64.getDecoder.decode(stringToDecode), StandardCharsets.UTF_8))
 
     val authHeader = request.headers.get(HeaderNames.AUTHORIZATION).getOrElse("")
+    val platformTypeHeader = request.headers.get(HeaderKeys.platformKey).getOrElse("")
 
     if (!authHeader.isEmpty && base64Decode(authHeader).map(_ == appConfig.authorizationKey).getOrElse(false)) Future.successful(None)
-    else Future.successful(Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
+    else
+      validatePlatformType(platformTypeHeader) match {
+        case Some(platformType) => validatePlatformAuthHeader(platformType, authHeader)
+        case None               => Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Platform header is missing or invalid")))))))
+      }
 
+  }
+
+  private def validatePlatformAuthHeader(platformType: PlatformType, authHeader: String) = {
+    appConfig.authPlatformMap.get(platformType) match {
+      case Some(authKey) => if (base64Decode(authHeader).map(_ == authKey).getOrElse(false)) Future.successful(None)
+        else
+          Future.successful(Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
+      case None          => Future.successful(Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Authorisation failed")))))))
+    }
+  }
+
+  private def base64Decode(stringToDecode: String): Try[String] = Try(new String(Base64.getDecoder.decode(stringToDecode), StandardCharsets.UTF_8))
+
+  private def validatePlatformType(platformHeader: String) = {
+    if (PlatformType.values.map(_.toString()).contains(platformHeader.toUpperCase)) {
+      Some(PlatformType.withNameInsensitive(platformHeader))
+    } else {
+      None
+    }
   }
 }
