@@ -19,15 +19,12 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 
 import play.api.Logging
 import play.api.libs.Files
-import play.api.libs.json.Json
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogue.models._
-import uk.gov.hmrc.integrationcatalogue.models.common._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.ValidatedApiPublishRequest
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.PublishService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -51,14 +48,12 @@ class PublishController @Inject() (
 
   implicit val config: AppConfig = appConfig
 
-  def publishFileTransfer() =
+  def publishFileTransfer(): Action[JsValue] =
     (Action andThen validateAuthorizationHeaderAction).async(playBodyParsers.tolerantJson) { implicit request =>
-      if (validateJsonString[FileTransferPublishRequest](request.body.toString())) {
-        val bodyVal = request.body.as[FileTransferPublishRequest]
-        publishService.publishFileTransfer(bodyVal).map(handlePublishResult)
-      } else {
-        logger.error("Invalid request body, must be a valid publish request")
-        Future.successful(BadRequest("Invalid request body"))
+      validateAndExtractJsonString[FileTransferPublishRequest](request.body.toString()) match {
+        case Some(validBody) =>  publishService.publishFileTransfer(validBody).map(handlePublishResult)
+        case None => logger.error("Invalid request body, must be a valid publish request")
+          Future.successful(BadRequest("Invalid request body"))
       }
     }
 
@@ -99,16 +94,16 @@ class PublishController @Inject() (
     }
   }
 
-  private def validateJsonString[T](body: String)(implicit write: Writes[T], reads: Reads[T]): Boolean = {
-    validateJson[T](body, body => Json.parse(body))
+  private def validateAndExtractJsonString[T](body: String)(implicit write: Writes[T], reads: Reads[T]) = {
+    validateJsonAndExtract[T](body, body => Json.parse(body))
   }
 
-  private def validateJson[T](body: String, f: String => JsValue)(implicit reads: Reads[T]): Boolean = {
+  private def validateJsonAndExtract[T](body: String, f: String => JsValue)(implicit reads: Reads[T]) = {
     Try[T] {
       f(body).as[T]
     } match {
-      case Success(_) => true
-      case Failure(_) => false
+      case Success(result) => Some(result)
+      case Failure(_) => None
     }
   }
 }
