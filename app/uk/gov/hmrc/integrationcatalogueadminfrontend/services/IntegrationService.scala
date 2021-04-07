@@ -33,6 +33,10 @@ class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCat
   def deleteByIntegrationId(integrationId: IntegrationId)(implicit hc: HeaderCarrier) : Future[Boolean] = {
     integrationCatalogueConnector.deleteByIntegrationId(integrationId)
   }
+  
+  def deleteByPlatform(platform: PlatformType)(implicit hc: HeaderCarrier) : Future[Unit] = {
+    integrationCatalogueConnector.deleteByPlatform(platform)
+  }
 
   def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])
   (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {

@@ -30,26 +30,27 @@ import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 
 @Singleton
-class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
-                                                    (implicit ec: ExecutionContext) extends Logging {
+class IntegrationCatalogueConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends Logging {
 
   private lazy val externalServiceUri = s"${appConfig.integrationCatalogueUrl}/integration-catalogue"
 
   def publishApis(publishRequest: ApiPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
     handleResult(
-      http.PUT[ApiPublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest))
+      http.PUT[ApiPublishRequest, PublishResult](s"$externalServiceUri/apis/publish", publishRequest)
+    )
   }
 
   def publishFileTransfer(publishRequest: FileTransferPublishRequest)(implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]] = {
     handleResult(
-      http.PUT[FileTransferPublishRequest, PublishResult](s"$externalServiceUri/filetransfer/publish", publishRequest))
+      http.PUT[FileTransferPublishRequest, PublishResult](s"$externalServiceUri/filetransfer/publish", publishRequest)
+    )
   }
 
-  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])
-                     (implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
-   val queryParamsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
+  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationResponse]] = {
+    val queryParamsValues = buildQueryParams(searchTerm, platformFilter: List[PlatformType])
     handleResult(
-      http.GET[IntegrationResponse](s"$externalServiceUri/integrations", queryParams = queryParamsValues))
+      http.GET[IntegrationResponse](s"$externalServiceUri/integrations", queryParams = queryParamsValues)
+    )
   }
 
   def findByIntegrationId(id: IntegrationId)(implicit hc: HeaderCarrier): Future[Either[Throwable, IntegrationDetail]] = {
@@ -66,6 +67,14 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
       }
   }
 
+  def deleteByPlatform(platform: PlatformType)(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    val queryParameters = Seq("platform" -> platform.toString())
+
+    http.DELETE(s"$externalServiceUri/integrations", queryParameters)
+      .map(_.status == NO_CONTENT)
+  }
+
   private def buildQueryParams(searchTerm: List[String], platformFilter: List[PlatformType]): Seq[(String, String)] = {
     val searchTerms = searchTerm.map(x => ("searchTerm", x))
     val platformsFilters = platformFilter.map((x: PlatformType) => ("platformFilter", x.toString))
@@ -73,8 +82,8 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
 
   }
 
-  private def handleResult[A](result: Future[A]): Future[Either[Throwable, A]] ={
-    result.map(x=> Right(x))
+  private def handleResult[A](result: Future[A]): Future[Either[Throwable, A]] = {
+    result.map(x => Right(x))
       .recover {
         case NonFatal(e) => logger.error(e.getMessage)
           Left(e)

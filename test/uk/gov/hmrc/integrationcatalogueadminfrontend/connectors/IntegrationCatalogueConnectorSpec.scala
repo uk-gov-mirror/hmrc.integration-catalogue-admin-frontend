@@ -22,6 +22,7 @@ import org.mockito.stubbing.ScalaOngoingStubbing
 import org.scalatest.{BeforeAndAfterEach, Matchers, OptionValues, WordSpec}
 import play.api.libs.json.Writes
 import play.api.test.Helpers
+import uk.gov.hmrc.integrationcatalogue.models._
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{BadGatewayException, HttpClient, _}
 import uk.gov.hmrc.integrationcatalogue.models._
@@ -33,14 +34,12 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with OptionValues
-  with MockitoSugar with BeforeAndAfterEach with AwaitTestSupport with ApiDetailTestData {
+class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with OptionValues with MockitoSugar with BeforeAndAfterEach with AwaitTestSupport with ApiDetailTestData {
 
   private val mockHttpClient = mock[HttpClient]
   private val mockAppConfig = mock[AppConfig]
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
   private implicit val hc: HeaderCarrier = HeaderCarrier()
-
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -52,64 +51,81 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
     val connector = new IntegrationCatalogueConnector(
       mockHttpClient,
-      mockAppConfig)
+      mockAppConfig
+    )
     val integrationId = IntegrationId(UUID.fromString("2840ce2d-03fa-46bb-84d9-0299402b7b32"))
-    val searchTerm  = "API1689"
+    val coreIfPlatform = PlatformType.CORE_IF
+    val searchTerm = "API1689"
     val outboundUrl = "/integration-catalogue/apis/publish"
-    val findWithFilterlUrl = s"/integration-catalogue/integrations"
+    val integrationsUrl = s"/integration-catalogue/integrations"
     def deleteIntegrationsUrl(id: IntegrationId) = s"/integration-catalogue/integrations/${id.value}"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult): ScalaOngoingStubbing[Future[PublishResult]] =
-      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
-        (eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])
-        (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult](eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])(
+        any[Writes[ApiPublishRequest]],
+        any[HttpReads[PublishResult]],
+        any[HeaderCarrier],
+        any[ExecutionContext]
+      ))
         .thenReturn(Future.successful(response))
 
     def httpCallToPublishWillFailWithException(exception: Throwable): ScalaOngoingStubbing[Future[PublishResult]] =
-      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
-        (eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])
-        (any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.PUT[ApiPublishRequest, PublishResult](eqTo(outboundUrl), any[ApiPublishRequest], any[Seq[(String, String)]])(
+        any[Writes[ApiPublishRequest]],
+        any[HttpReads[PublishResult]],
+        any[HeaderCarrier],
+        any[ExecutionContext]
+      ))
         .thenReturn(Future.failed(exception))
 
     def httpCallToFindWithFilterWillSucceedWithResponse(response: IntegrationResponse): ScalaOngoingStubbing[Future[IntegrationResponse]] =
-      when(mockHttpClient.GET[IntegrationResponse]
-        (eqTo(findWithFilterlUrl), eqTo(Seq(("searchTerm",searchTerm))))
-        (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.GET[IntegrationResponse](eqTo(integrationsUrl), eqTo(Seq(("searchTerm", searchTerm))))(
+        any[HttpReads[IntegrationResponse]],
+        any[HeaderCarrier],
+        any[ExecutionContext]
+      ))
         .thenReturn(Future.successful(response))
 
     def httpCallToFindWithFilterWillFailWithException(exception: Throwable): ScalaOngoingStubbing[Future[IntegrationResponse]] =
-           when(mockHttpClient.GET[IntegrationResponse]
-        (eqTo(findWithFilterlUrl), eqTo(Seq(("searchTerm",searchTerm))))
-        (any[HttpReads[IntegrationResponse]], any[HeaderCarrier], any[ExecutionContext]))
+      when(mockHttpClient.GET[IntegrationResponse](eqTo(integrationsUrl), eqTo(Seq(("searchTerm", searchTerm))))(
+        any[HttpReads[IntegrationResponse]],
+        any[HeaderCarrier],
+        any[ExecutionContext]
+      ))
         .thenReturn(Future.failed(exception))
 
     def httpCallToDeleteApiWillSucceed(response: HttpResponse, id: IntegrationId): ScalaOngoingStubbing[Future[HttpResponse]] =
       when(mockHttpClient.DELETE[HttpResponse](eqTo(deleteIntegrationsUrl(id)), *)(*, *, *)).thenReturn(Future.successful(response))
 
-
     def httpCallToDeleteApiWillFailWithNotFound(exception: Throwable, id: IntegrationId): ScalaOngoingStubbing[Future[HttpResponse]] =
       when(mockHttpClient.DELETE[HttpResponse](eqTo(deleteIntegrationsUrl(id)), *)(*, *, *)).thenReturn(Future.failed(exception))
+
+    def httpCallToDeleteApiByPlatformWillSucceed(response: HttpResponse, platform: PlatformType): ScalaOngoingStubbing[Future[HttpResponse]] =
+      when(mockHttpClient.DELETE[HttpResponse](eqTo(integrationsUrl), eqTo(Seq(("platform", platform.toString))))(*, *, *)).thenReturn(Future.successful(response))
   }
 
   "IntegrationCatalogueConnector send" should {
 
-      val request: ApiPublishRequest = ApiPublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
+    val request: ApiPublishRequest = ApiPublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
       httpCallToPublishWillSucceedWithResponse(
-        PublishResult(isSuccess = true,
-          Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platformType)), List.empty))
-
+        PublishResult(isSuccess = true, Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()), request.publisherReference, request.platformType)), List.empty)
+      )
 
       val result: Either[Throwable, PublishResult] = await(connector.publishApis(request))
 
       result match {
-        case Left(_) => fail()
+        case Left(_)                             => fail()
         case Right(publishResult: PublishResult) => publishResult.isSuccess shouldBe true
       }
 
-      verify(mockHttpClient).PUT(eqTo(outboundUrl), eqTo(request),
-        any[Seq[(String, String)]])(any[Writes[ApiPublishRequest]], any[HttpReads[PublishResult]], headerCarrierCaptor.capture, any[ExecutionContext])
+      verify(mockHttpClient).PUT(eqTo(outboundUrl), eqTo(request), any[Seq[(String, String)]])(
+        any[Writes[ApiPublishRequest]],
+        any[HttpReads[PublishResult]],
+        headerCarrierCaptor.capture,
+        any[ExecutionContext]
+      )
 
     }
 
@@ -119,8 +135,8 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       val result: Either[Throwable, PublishResult] = await(connector.publishApis(request))
 
       result match {
-        case Right(_) => fail()
-        case Left(_:BadGatewayException) => succeed
+        case Right(_)                     => fail()
+        case Left(_: BadGatewayException) => succeed
       }
 
     }
@@ -135,7 +151,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       val result: Either[Throwable, IntegrationResponse] = await(connector.findWithFilters(List(searchTerm), List.empty))
 
       result match {
-        case Left(_) => fail()
+        case Left(_)                                         => fail()
         case Right(integrationResponse: IntegrationResponse) => integrationResponse.results shouldBe expectedResult
       }
     }
@@ -146,14 +162,14 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       val result: Either[Throwable, IntegrationResponse] = await(connector.findWithFilters(List(searchTerm), List.empty))
 
       result match {
-        case Right(_) => fail()
-        case Left(_:BadGatewayException) => succeed
+        case Right(_)                     => fail()
+        case Left(_: BadGatewayException) => succeed
       }
 
     }
   }
 
-  "deleteByPublisherReference" should {
+  "deleteByIntegrationId" should {
 
     "return true when successful and NO_CONTENT status returned" in new SetUp {
       val noContentResponse: HttpResponse = HttpResponse(NO_CONTENT, "")
@@ -172,5 +188,14 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
       await(connector.deleteByIntegrationId(integrationId)) shouldBe false
     }
 
+  }
+
+  "deleteByPlatform" should {
+
+    "return true when successful and NO_CONTENT status returned" in new SetUp {
+      val noContentResponse: HttpResponse = HttpResponse(NO_CONTENT, "")
+      httpCallToDeleteApiByPlatformWillSucceed(noContentResponse, coreIfPlatform)
+      await(connector.deleteByPlatform(coreIfPlatform)) shouldBe ( () )
+    }
   }
 }

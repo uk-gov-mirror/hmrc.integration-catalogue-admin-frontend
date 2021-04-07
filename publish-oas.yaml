@@ -2,7 +2,7 @@ openapi: 3.0.0
 servers:
 # TODO: Not sure these URL are correct.
   - description: MDTP - QA
-    url: https://admin.qa.tax.service.gov.uk/integration-catalogue-admin
+    url: https://admin.qa.tax.service.gov.uk/integration-catalogue-admin-frontend
   - description: MDTP - Prod
     url: https://www.example.com/integration-catalogue-admin
   - description: MDTP - Jenkins CURL Internal URL
@@ -132,7 +132,7 @@ paths:
         - Publishing
       responses:
         "200":
-          description: "Yeah"
+          description: "OK"
           content:
             application/json:
               schema: 
@@ -140,6 +140,22 @@ paths:
                 items: 
                   type: object
                   $ref: '#/components/schemas/Api'
+    delete:
+      description:
+        This deletes all APIs and FileTransfers for the platform
+      tags:
+        - Publishing
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          required: true
+          name: platform
+          schema: 
+            $ref: '#/components/schemas/PlatformType'
+      responses:
+        "204": 
+          description: The resource was deleted successfully
   /services/integrations/{api-id}:
     get:
       description: 
@@ -183,7 +199,7 @@ components:
     ApiKeyAuth: # TODO Is this what we want auth to look like?
       type: apiKey
       in: header
-      name: X-API-Key # TODO Good header name?
+      name: Authorization
   schemas:
     Api:
       type: object

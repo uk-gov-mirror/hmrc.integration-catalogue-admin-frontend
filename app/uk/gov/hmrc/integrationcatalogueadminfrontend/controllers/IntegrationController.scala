@@ -33,43 +33,53 @@ import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateQueryParamKeyAction
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateAuthorizationHeaderAction
 
-
 @Singleton
-class IntegrationController @Inject()(appConfig: AppConfig,
-                                      integrationService: IntegrationService,
-                                      validateQueryParamKeyAction: ValidateQueryParamKeyAction,
-                                      validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
-                                      mcc: MessagesControllerComponents)
-                                 (implicit ec: ExecutionContext) extends FrontendController(mcc) with Logging {
+class IntegrationController @Inject() (
+    appConfig: AppConfig,
+    integrationService: IntegrationService,
+    validateQueryParamKeyAction: ValidateQueryParamKeyAction,
+    validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
+    mcc: MessagesControllerComponents
+  )(implicit ec: ExecutionContext)
+    extends FrontendController(mcc)
+    with Logging {
 
   implicit val config: AppConfig = appConfig
 
-  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType]) : Action[AnyContent] =
+  def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType]): Action[AnyContent] =
     (Action andThen validateQueryParamKeyAction).async { implicit request =>
-    integrationService.findWithFilters(searchTerm, platformFilter)
-     .map {
-      case Right(response) => Ok(Json.toJson(response))
-      case Left(error: Throwable) =>
-        logger.error(s"findWithFilters error integration-catalogue ${error.getMessage}")
-        InternalServerError(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unable to process your request")))))
+      integrationService.findWithFilters(searchTerm, platformFilter)
+        .map {
+          case Right(response)        => Ok(Json.toJson(response))
+          case Left(error: Throwable) =>
+            logger.error(s"findWithFilters error integration-catalogue ${error.getMessage}")
+            InternalServerError(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Unable to process your request")))))
+        }
     }
-}
 
- def findByIntegrationId(id: IntegrationId): Action[AnyContent] =
-   Action.async { implicit request =>
-    integrationService.findByIntegrationId(id)map {
-        case Right(response) => Ok(Json.toJson(response))
-        case Left(_: NotFoundException)  =>  NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"findByIntegrationId: The requested resource could not be found.")))))
-        case Left(error: Throwable) =>
-          BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
+  def findByIntegrationId(id: IntegrationId): Action[AnyContent] =
+    Action.async { implicit request =>
+      integrationService.findByIntegrationId(id) map {
+        case Right(response)            => Ok(Json.toJson(response))
+        case Left(_: NotFoundException) => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"findByIntegrationId: The requested resource could not be found.")))))
+        case Left(error: Throwable)     =>
+          BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"findByIntegrationId error integration-catalogue ${error.getMessage}")))))
       }
- }
+    }
 
-  def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] =
+  def deleteByIntegrationId(integrationId: IntegrationId): Action[AnyContent] =
     (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
       integrationService.deleteByIntegrationId(integrationId).map {
-        case true => NoContent
+        case true  => NoContent
         case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
+      }
+    }
+
+  def deleteByPlatform(platform: PlatformType): Action[AnyContent] =
+    (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
+      integrationService.deleteByPlatform(platform).map {
+        // TODO: Maybe return the number deleted
+        case _ => NoContent
       }
     }
 }
