@@ -75,6 +75,7 @@ class IntegrationController @Inject() (
       }
     }
 
+  // TODO: Missing auth header -> odd error
   def deleteByPlatform(platform: PlatformType): Action[AnyContent] =
     (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
       integrationService.deleteByPlatform(platform).map {

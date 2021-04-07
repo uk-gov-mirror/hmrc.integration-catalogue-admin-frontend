@@ -26,11 +26,11 @@ trait IntegrationCatalogueConnectorStub {
   val getApisUrl = "/integration-catalogue/integrations"
   def deleteintegrationByIdUrl(integrationId: String) = s"/integration-catalogue/integrations/$integrationId"
   def getIntegrationByIdUrl(id: String) = s"/integration-catalogue/integrations/$id"
-  def findWithFiltersUrl(searchTerm: String) = s"/integration-catalogue/integrations$searchTerm"
+  def integrationsUrl(param: String) = s"/integration-catalogue/integrations$param"
 
     def primeIntegrationCatalogueServiceFindWithFilterWithBadRequest(searchTerm: String) = {
 
-    stubFor(get(urlEqualTo(findWithFiltersUrl(searchTerm)))
+    stubFor(get(urlEqualTo(integrationsUrl(searchTerm)))
       .willReturn(
         aResponse()
           .withStatus(BAD_REQUEST)
@@ -41,7 +41,7 @@ trait IntegrationCatalogueConnectorStub {
 
   def primeIntegrationCatalogueServiceFindWithFilterWithBody(status : Int, responseBody : String, searchTerm: String) = {
 
-    stubFor(get(urlEqualTo(findWithFiltersUrl(searchTerm)))
+    stubFor(get(urlEqualTo(integrationsUrl(searchTerm)))
       .willReturn(
         aResponse()
           .withStatus(status)
@@ -116,6 +116,17 @@ trait IntegrationCatalogueConnectorStub {
   def primeIntegrationCatalogueServiceDelete(integrationId: String, status : Int) = {
 
     stubFor(delete(urlEqualTo(deleteintegrationByIdUrl(integrationId)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+      )
+    )
+  }
+
+    def primeIntegrationCatalogueServiceDeleteByPlatform(platform: String, status : Int) = {
+
+    stubFor(delete(urlEqualTo(integrationsUrl(platform)))
       .willReturn(
         aResponse()
           .withStatus(status)
