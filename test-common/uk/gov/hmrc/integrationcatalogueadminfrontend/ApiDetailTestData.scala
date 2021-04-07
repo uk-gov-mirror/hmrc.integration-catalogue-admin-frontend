@@ -34,14 +34,58 @@ trait ApiDetailTestData {
 
   val jsonMediaType = "application/json"
 
+  val schema1 = DefaultSchema(
+    name = Some("agentReferenceNumber"),
+    not = None,
+    `type` = Some("string"),
+    pattern = Some("^[A-Z](ARN)[0-9]{7}$"),
+    description = None,
+    ref = None,
+    properties = List.empty,
+    `enum` = List.empty,
+    required = List.empty,
+    stringAttributes = None,
+    numberAttributes = None,
+    minProperties = None,
+    maxProperties = None,
+    format = None,
+    default = None,
+    example = None
+  )
+
+  val schema2 = DefaultSchema(
+    name = Some("agentReferenceNumber"),
+    not = None,
+    `type` = Some("object"),
+    pattern = None,
+    description = None,
+    ref = None,
+    properties = List(schema1),
+    `enum` = List.empty,
+    required = List.empty,
+    stringAttributes = None,
+    numberAttributes = None,
+    minProperties = None,
+    maxProperties = None,
+    format = None,
+    default = None,
+    example = None
+  )
+
   val exampleRequest1name = "example request 1"
   val exampleRequest1Body = "{\"someValue\": \"abcdefg\"}"
-  val exampleRequest1: Example = Example(exampleRequest1name, exampleRequest1Body, Some(jsonMediaType))
+  val exampleRequest1: Example = Example(exampleRequest1name, exampleRequest1Body)
+  val exampleResponse1 = new Example("example response name", "example response body")
 
-  val exampleResponse1 = new Example("example response name", "example response body", Some(jsonMediaType))
+  val request = Request(description = Some("request"), schema = Some(schema1), mediaType = Some(jsonMediaType), examples = List(exampleRequest1))
+  val response = Response(statusCode = 200, description = Some("response"), schema = Some(schema2), mediaType = Some("application/json"), examples = List(exampleResponse1))
 
-  val endpoint1: Endpoint = Endpoint("/some/url", "GET", "some summary", "some description", List(exampleRequest1), List(exampleResponse1))
-  val endpoints = List(endpoint1, Endpoint("/some/url", "PUT", "some summary", "some description"))
+  val endpointGetMethod = EndpointMethod("GET", Some("operationId"), Some("some summary"), Some("some description"), None, List(response))
+  val endpointPutMethod = EndpointMethod("PUT", Some("operationId2"), Some("some summary"), Some("some description"), Some(request), List.empty)
+  val endpoint1 = Endpoint("/some/url", List(endpointGetMethod))
+  val endpoint2 = Endpoint("/some/url", List(endpointPutMethod))
+
+  val endpoints = List(endpoint1, endpoint2, Endpoint("/some/url", List.empty))
 
   val exampleApiDetail: ApiDetail = ApiDetail(
     IntegrationId(UUID.fromString("e2e4ce48-29b0-11eb-adc1-0242ac120002")),
@@ -55,7 +99,8 @@ trait ApiDetailTestData {
     version = "1.1.0",
     specificationType = SpecificationType.OAS_V3,
     hods = List("ETMP"),
-    endpoints = endpoints
+    endpoints = endpoints,
+    schemas = List(schema1)
   )
 
   val exampleApiDetail2 = ApiDetail(
@@ -70,11 +115,13 @@ trait ApiDetailTestData {
     version = "1.2.0",
     specificationType = SpecificationType.OAS_V3,
     hods = List("ETMP"),
-    endpoints = endpoints
+    endpoints = endpoints,
+    schemas = List(schema1)
   )
 
   val exampleFileTransfer: FileTransferDetail =
-    FileTransferDetail(  IntegrationId(UUID.fromString("e2e4ce48-29b0-11eb-adc1-0242ac120002")), 
+    FileTransferDetail(
+      IntegrationId(UUID.fromString("e2e4ce48-29b0-11eb-adc1-0242ac120002")),
       fileTransferSpecificationVersion = "0.1",
       publisherReference = "API1601",
       title = "getKnownFactsName ETMP",
@@ -85,6 +132,7 @@ trait ApiDetailTestData {
       searchText = "file transfer search text",
       sourceSystem = List("source"),
       targetSystem = List("target"),
-      fileTransferPattern = "pattern1")
+      fileTransferPattern = "pattern1"
+    )
 
 }

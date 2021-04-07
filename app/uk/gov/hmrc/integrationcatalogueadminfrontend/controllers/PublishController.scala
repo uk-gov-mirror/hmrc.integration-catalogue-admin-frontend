@@ -22,7 +22,7 @@ import play.api.libs.Files
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import play.api.mvc._
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
-import uk.gov.hmrc.integrationcatalogue.models._
+
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders._
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.ValidatedApiPublishRequest
@@ -34,6 +34,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogue.models.FileTransferPublishRequest
+import uk.gov.hmrc.integrationcatalogue.models.ErrorResponse
+import uk.gov.hmrc.integrationcatalogue.models.ErrorResponseMessage
+import uk.gov.hmrc.integrationcatalogue.models.PublishResult
+import uk.gov.hmrc.integrationcatalogue.models.PublishDetails
 
 @Singleton
 class PublishController @Inject() (
