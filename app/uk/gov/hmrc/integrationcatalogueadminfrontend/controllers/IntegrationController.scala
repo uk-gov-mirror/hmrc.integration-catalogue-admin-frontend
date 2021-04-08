@@ -19,19 +19,17 @@ package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage}
+import uk.gov.hmrc.http.NotFoundException
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogue.models.common.{IntegrationId, PlatformType}
+import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.config.AppConfig
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.{ValidateAuthorizationHeaderAction, ValidateIntegrationIdAgainstPlatformTypeAction, ValidateQueryParamKeyAction}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.IntegrationService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
-import uk.gov.hmrc.http.NotFoundException
-import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateQueryParamKeyAction
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.ValidateAuthorizationHeaderAction
 
 
 @Singleton
@@ -39,6 +37,7 @@ class IntegrationController @Inject()(appConfig: AppConfig,
                                       integrationService: IntegrationService,
                                       validateQueryParamKeyAction: ValidateQueryParamKeyAction,
                                       validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
+                                      validateIntegrationIdAgainstPlatformTypeAction: ValidateIntegrationIdAgainstPlatformTypeAction,
                                       mcc: MessagesControllerComponents)
                                  (implicit ec: ExecutionContext) extends FrontendController(mcc) with Logging {
 
@@ -65,11 +64,12 @@ class IntegrationController @Inject()(appConfig: AppConfig,
       }
  }
 
-  def deleteByIntegrationId(integrationId: IntegrationId) : Action[AnyContent] =
-    (Action andThen validateAuthorizationHeaderAction).async { implicit request =>
+  def deleteByIntegrationId(integrationId: IntegrationId): Action[AnyContent] =
+    (Action andThen validateAuthorizationHeaderAction andThen validateIntegrationIdAgainstPlatformTypeAction).async { implicit request =>
       integrationService.deleteByIntegrationId(integrationId).map {
         case true => NoContent
         case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))
       }
     }
+
 }

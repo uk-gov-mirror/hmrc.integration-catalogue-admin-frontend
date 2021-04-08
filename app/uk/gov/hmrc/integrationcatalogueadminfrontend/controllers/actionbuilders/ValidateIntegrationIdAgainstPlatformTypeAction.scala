@@ -1,0 +1,76 @@
+/*
+ * Copyright 2021 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders
+
+import play.api.libs.json.Json
+import play.api.mvc.Results._
+import play.api.mvc.{ActionFilter, Request, Result}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
+import uk.gov.hmrc.integrationcatalogue.models.common.{IntegrationId, PlatformType}
+import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage, IntegrationDetail}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.services.IntegrationService
+import uk.gov.hmrc.play.HeaderCarrierConverter
+
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
+@Singleton
+class ValidateIntegrationIdAgainstPlatformTypeAction @Inject()
+(integrationService: IntegrationService)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
+
+  override def executionContext: ExecutionContext = ec
+
+  implicit def hc(implicit request: Request[_]): HeaderCarrier = {
+    HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
+  }
+
+  override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
+
+    val platformTypeHeader = request.headers.get(HeaderKeys.platformKey).getOrElse("")
+    val integrationId = request.uri.substring(request.uri.lastIndexOf("/") + 1, request.uri.size)
+
+      validatePlatformType(platformTypeHeader) match {
+        case Some(platformType) => validateIntegrationIdAgainstPlatform(integrationId, platformType)(hc(request))
+        case None               => Future.successful(None)
+      }
+  }
+
+  private def validateIntegrationIdAgainstPlatform(integrationId: String, platform: PlatformType)(implicit hc: HeaderCarrier) = {
+    for {
+      maybeIntegrationDetail <- integrationService.findByIntegrationId(IntegrationId(UUID.fromString(integrationId))).map (r =>
+        r match {
+          case Left(_) => Some(NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Integration with ID: $integrationId not found"))))))
+          case Right(integrationDetail: IntegrationDetail) => {
+            if(integrationDetail.platform == platform) None
+            else Some(Unauthorized(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"Authorisation failed - ${platform.toString} is not authorised to delete an integration on ${integrationDetail.platform.toString}"))))))
+          }
+        }
+      )
+    } yield maybeIntegrationDetail
+  }
+
+  private def validatePlatformType(platformHeader: String) = {
+    if (PlatformType.values.map(_.toString()).contains(platformHeader.toUpperCase)) {
+      Some(PlatformType.withNameInsensitive(platformHeader))
+    } else {
+      None
+    }
+  }
+}
