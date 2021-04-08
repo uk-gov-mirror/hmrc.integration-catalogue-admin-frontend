@@ -25,6 +25,7 @@ import uk.gov.hmrc.integrationcatalogue.models.common.{IntegrationId, PlatformTy
 import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage, IntegrationDetail}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.IntegrationService
+import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidatePlatformType
 import uk.gov.hmrc.play.HeaderCarrierConverter
 
 import java.util.UUID
@@ -33,7 +34,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ValidateIntegrationIdAgainstPlatformTypeAction @Inject()
-(integrationService: IntegrationService)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
+(integrationService: IntegrationService)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with ValidatePlatformType {
 
   override def executionContext: ExecutionContext = ec
 
@@ -66,11 +67,4 @@ class ValidateIntegrationIdAgainstPlatformTypeAction @Inject()
     } yield maybeIntegrationDetail
   }
 
-  private def validatePlatformType(platformHeader: String) = {
-    if (PlatformType.values.map(_.toString()).contains(platformHeader.toUpperCase)) {
-      Some(PlatformType.withNameInsensitive(platformHeader))
-    } else {
-      None
-    }
-  }
 }
