@@ -88,6 +88,16 @@ trait IntegrationCatalogueConnectorStub {
     )
   }
 
+  def primeIntegrationCatalogueServiceGetByIdWithoutResponseBody(status : Int, id: String) = {
+
+    stubFor(get(urlEqualTo(getIntegrationByIdUrl(id)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+      )
+    )
+  }
 
   def primeIntegrationCatalogueServiceGetByIdReturnsBadRequest( id: IntegrationId) = {
 

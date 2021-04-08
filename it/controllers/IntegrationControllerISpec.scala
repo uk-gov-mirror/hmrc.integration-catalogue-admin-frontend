@@ -30,7 +30,7 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 import scala.concurrent.Future
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
-import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
+import uk.gov.hmrc.integrationcatalogue.models.common.{IntegrationId, PlatformType}
 import play.api.http.HeaderNames
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 
@@ -56,16 +56,20 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
     private val encodedMasterAuthKey = "dGVzdC1hdXRoLWtleQ=="
     private val encodedCoreIfAuthKey = "c29tZUtleTM="
+    private val encodedApiPlatformAuthKey = "c29tZUtleTI="
     val coreIfAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedCoreIfAuthKey)
-    val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
+    val apiPlatformAuthHeader = List(HeaderNames.AUTHORIZATION -> encodedApiPlatformAuthKey)
     val masterKeyHeader = List(HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
+    val coreIfPlatformTypeHeader =  List(HeaderKeys.platformKey -> "CORE_IF")
+    val apiPlatformPlatformTypeHeader =  List(HeaderKeys.platformKey -> "API_PLATFORM")
+
 
     val exampleIntegrationId = "2840ce2d-03fa-46bb-84d9-0299402b7b32"
     val validGetApisRequest: FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.GET, "/integration-catalogue-admin-frontend/services/integrations")
 
-    def validFindByIntegrationIdRequest(id: IntegrationId): FakeRequest[AnyContentAsEmpty.type] =
-      FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/${id.value}")
+    def validFindByIntegrationIdRequest(id: String): FakeRequest[AnyContentAsEmpty.type] =
+      FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations/$id")
 
     def validFindwithFilterRequest(searchTerm: String): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest(Helpers.GET, s"/integration-catalogue-admin-frontend/services/integrations$searchTerm")
@@ -93,10 +97,18 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
 
     "GET /services/integrations/{id}" should  {
 
+      "return 400 when using invalid integrationId" in new Setup {
+        val unknownIntegrationId = "UNKNOWN"
+
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(unknownIntegrationId)).get
+        status(response) mustBe 400
+        contentAsString(response) mustBe """{"errors":[{"message":"Cannot accept UNKNOWN as IntegrationId"}]}"""
+      }
+
       "return 200 and integration detail from backend" in new Setup {
        primeIntegrationCatalogueServiceGetByIdWithBody(OK, Json.toJson(exampleApiDetail.asInstanceOf[IntegrationDetail]).toString, exampleApiDetail.id)
 
-        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id.value.toString)).get
         status(response) mustBe OK
         contentAsString(response) mustBe """{"_type":"uk.gov.hmrc.integrationcatalogue.models.ApiDetail","id":"e2e4ce48-29b0-11eb-adc1-0242ac120002","publisherReference":"API1689","title":"getKnownFactsName","description":"getKnownFactsDesc","platform":"CORE_IF","searchText":"Some Search Text","hods":["ETMP"],"lastUpdated":"2020-11-04T20:27:05.000+0000","maintainer":{"name":"IF Team","slackChannel":"N/A","contactInfo":[]},"version":"1.1.0","specificationType":"OAS_V3","endpoints":[{"path":"/some/url","methods":[{"httpMethod":"GET","operationId":"operationId","summary":"some summary","description":"some description","responses":[{"statusCode":200,"description":"response","schema":{"_type":"uk.gov.hmrc.integrationcatalogue.models.DefaultSchema","name":"agentReferenceNumber","type":"object","properties":[{"_type":"uk.gov.hmrc.integrationcatalogue.models.DefaultSchema","name":"agentReferenceNumber","type":"string","pattern":"^[A-Z](ARN)[0-9]{7}$","properties":[],"enum":[],"required":[]}],"enum":[],"required":[]},"mediaType":"application/json","examples":[{"name":"example response name","jsonBody":"example response body"}]}]}]},{"path":"/some/url","methods":[{"httpMethod":"PUT","operationId":"operationId2","summary":"some summary","description":"some description","request":{"description":"request","schema":{"_type":"uk.gov.hmrc.integrationcatalogue.models.DefaultSchema","name":"agentReferenceNumber","type":"string","pattern":"^[A-Z](ARN)[0-9]{7}$","properties":[],"enum":[],"required":[]},"mediaType":"application/json","examples":[{"name":"example request 1","jsonBody":"{\"someValue\": \"abcdefg\"}"}]},"responses":[]}]},{"path":"/some/url","methods":[]}],"schemas":[{"_type":"uk.gov.hmrc.integrationcatalogue.models.DefaultSchema","name":"agentReferenceNumber","type":"string","pattern":"^[A-Z](ARN)[0-9]{7}$","properties":[],"enum":[],"required":[]}]}"""
       }
@@ -105,7 +117,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
       "return 404 when backend returns 404" in new Setup {
        primeIntegrationCatalogueServiceGetByIdWithBody(NOT_FOUND, "", exampleApiDetail.id)
 
-        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id.value.toString)).get
         status(response) mustBe NOT_FOUND
         contentAsString(response) mustBe """{"errors":[{"message":"findByIntegrationId: The requested resource could not be found."}]}"""
       }
@@ -113,7 +125,7 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
       "return 400 when backend returns 400" in new Setup {
        primeIntegrationCatalogueServiceGetByIdWithBody(BAD_REQUEST, "", exampleApiDetail.id)
 
-        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id)).get
+        val response: Future[Result] = route(app, validFindByIntegrationIdRequest(exampleApiDetail.id.value.toString)).get
         status(response) mustBe BAD_REQUEST
       }
 
@@ -274,6 +286,32 @@ class IntegrationControllerISpec extends ServerBaseISpec with BeforeAndAfterEach
         status(response) mustBe BAD_REQUEST
 
         contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+      }
+
+      "respond with 404 when auth header and key are CORE_IF and integrationId is not found" in new Setup {
+        primeIntegrationCatalogueServiceGetByIdWithoutResponseBody(NOT_FOUND, exampleIntegrationId)
+
+        val requestWithNoAuthHeader =
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/$exampleIntegrationId")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader ++ coreIfPlatformTypeHeader: _*)).get
+        status(response) mustBe NOT_FOUND
+
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Integration with ID: 2840ce2d-03fa-46bb-84d9-0299402b7b32 not found"}]}"""
+      }
+
+      "respond with 401 when auth header and key are CORE_IF but integrationId on API_PLATFORM" in new Setup {
+        val integrationWithApiPlatform = exampleApiDetail.copy(platform = PlatformType.API_PLATFORM)
+        primeIntegrationCatalogueServiceGetByIdWithBody(OK, Json.toJson(integrationWithApiPlatform.asInstanceOf[IntegrationDetail]).toString, integrationWithApiPlatform.id)
+
+        val requestWithNoAuthHeader =
+          FakeRequest(Helpers.DELETE,s"/integration-catalogue-admin-frontend/services/integrations/${integrationWithApiPlatform.id.value.toString}")
+
+        val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader ++ coreIfPlatformTypeHeader: _*)).get
+        status(response) mustBe UNAUTHORIZED
+
+        contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed - CORE_IF is not authorised to delete an integration on API_PLATFORM"}]}"""
       }
     }
   }
