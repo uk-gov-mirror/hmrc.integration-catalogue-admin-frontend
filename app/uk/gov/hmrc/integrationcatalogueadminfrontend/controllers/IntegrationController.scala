@@ -65,7 +65,9 @@ class IntegrationController @Inject()(appConfig: AppConfig,
  }
 
   def deleteByIntegrationId(integrationId: IntegrationId): Action[AnyContent] =
-    (Action andThen validateAuthorizationHeaderAction andThen validateIntegrationIdAgainstPlatformTypeAction).async { implicit request =>
+    (Action andThen validateAuthorizationHeaderAction
+    andThen uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.stuff.IntegrationDetailAction(integrationId) 
+    andThen validateIntegrationIdAgainstPlatformTypeAction).async { implicit request =>
       integrationService.deleteByIntegrationId(integrationId).map {
         case true => NoContent
         case false => NotFound(Json.toJson(ErrorResponse(List(ErrorResponseMessage(s"deleteByIntegrationId: The requested resource could not be found.")))))

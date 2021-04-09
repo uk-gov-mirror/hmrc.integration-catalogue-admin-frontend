@@ -34,18 +34,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ValidateIntegrationIdAgainstPlatformTypeAction @Inject()
-(integrationService: IntegrationService)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with ValidatePlatformType {
+(integrationService: IntegrationService)(implicit ec: ExecutionContext) extends ActionFilter[IntegrationDetailRequest] with HttpErrorFunctions with ValidatePlatformType {
 
   override def executionContext: ExecutionContext = ec
 
-  implicit def hc(implicit request: Request[_]): HeaderCarrier = {
+  implicit def hc(implicit request: IntegrationDetailRequest[_]): HeaderCarrier = {
     HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
   }
 
-  override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
+  override protected def filter[A](request: IntegrationDetailRequest[A]): Future[Option[Result]] = {
 
     val platformTypeHeader = request.headers.get(HeaderKeys.platformKey).getOrElse("")
-    val integrationId = request.uri.substring(request.uri.lastIndexOf("/") + 1, request.uri.size)
+    val integrationId = request.integrationId.value.toString()
 
       validatePlatformType(platformTypeHeader) match {
         case Some(platformType) => validateIntegrationIdAgainstPlatform(integrationId, platformType)(hc(request))
