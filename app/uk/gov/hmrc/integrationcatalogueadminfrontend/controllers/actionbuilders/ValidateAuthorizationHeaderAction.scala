@@ -27,14 +27,17 @@ import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.json.Json
+
 import scala.util.Try
 import java.util.Base64
 import java.nio.charset.StandardCharsets
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidatePlatformType
 
 @Singleton
-class ValidateAuthorizationHeaderAction @Inject() (appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateAuthorizationHeaderAction @Inject()
+(appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with ValidatePlatformType {
 
   override def executionContext: ExecutionContext = ec
 
@@ -63,11 +66,4 @@ class ValidateAuthorizationHeaderAction @Inject() (appConfig: AppConfig)(implici
 
   private def base64Decode(stringToDecode: String): Try[String] = Try(new String(Base64.getDecoder.decode(stringToDecode), StandardCharsets.UTF_8))
 
-  private def validatePlatformType(platformHeader: String) = {
-    if (PlatformType.values.map(_.toString()).contains(platformHeader.toUpperCase)) {
-      Some(PlatformType.withNameInsensitive(platformHeader))
-    } else {
-      None
-    }
-  }
 }

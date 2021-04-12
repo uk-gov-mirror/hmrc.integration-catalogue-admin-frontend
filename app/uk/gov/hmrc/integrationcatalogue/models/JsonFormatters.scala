@@ -18,6 +18,7 @@ package uk.gov.hmrc.integrationcatalogue.models
 
 import play.api.libs.json._
 import uk.gov.hmrc.integrationcatalogue.models.common._
+import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.IntegrationDetailRequest
 
 object JsonFormatters {
 
