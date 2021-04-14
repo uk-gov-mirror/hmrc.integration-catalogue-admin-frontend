@@ -32,6 +32,8 @@ import uk.gov.hmrc.integrationcatalogueadminfrontend.data.ApiDetailTestData
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import play.api.libs.json.Json
+import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 
 class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with OptionValues
   with MockitoSugar with BeforeAndAfterEach with AwaitTestSupport with ApiDetailTestData {
@@ -58,6 +60,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     val outboundUrl = "/integration-catalogue/apis/publish"
     val findWithFilterlUrl = s"/integration-catalogue/integrations"
     def deleteIntegrationsUrl(id: IntegrationId) = s"/integration-catalogue/integrations/${id.value}"
+    def deleteIntegrationsByPlatformUrl(platform: String) = s"/integration-catalogue/integrations?platforms=$platform"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult): ScalaOngoingStubbing[Future[PublishResult]] =
       when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
@@ -89,6 +92,13 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
     def httpCallToDeleteApiWillFailWithNotFound(exception: Throwable, id: IntegrationId): ScalaOngoingStubbing[Future[HttpResponse]] =
       when(mockHttpClient.DELETE[HttpResponse](eqTo(deleteIntegrationsUrl(id)), *)(*, *, *)).thenReturn(Future.failed(exception))
+
+    def httpCallToDeleteByPlatformWillSucceed(response: DeleteIntegrationsResponse, platform: String): ScalaOngoingStubbing[Future[DeleteIntegrationsResponse]] =
+      when(mockHttpClient.DELETE[DeleteIntegrationsResponse](eqTo(deleteIntegrationsByPlatformUrl(platform)), *)(*, *, *)).thenReturn(Future.successful(response))
+
+    def httpCallToDeleteByPlatformWillFail(exception: Throwable, platform: String): ScalaOngoingStubbing[Future[DeleteIntegrationsResponse]] =
+      when(mockHttpClient.DELETE[DeleteIntegrationsResponse](eqTo(deleteIntegrationsByPlatformUrl(platform)), *)(*, *, *)).thenReturn(Future.failed(exception))
+
   }
 
   "IntegrationCatalogueConnector send" should {
@@ -153,7 +163,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     }
   }
 
-  "deleteByPublisherReference" should {
+  "deleteByIntegrationId" should {
 
     "return true when successful and NO_CONTENT status returned" in new SetUp {
       val noContentResponse: HttpResponse = HttpResponse(NO_CONTENT, "")
@@ -173,4 +183,21 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     }
 
   }
+
+  "deleteByPlatform" should {
+
+    "return DeleteIntegrationsSuccess when successful and OK status returned" in new SetUp {
+      val response = DeleteIntegrationsResponse(1)
+      httpCallToDeleteByPlatformWillSucceed(response, "CORE_IF")
+      await(connector.deleteByPlatform(PlatformType.CORE_IF)) shouldBe DeleteIntegrationsSuccess(DeleteIntegrationsResponse(1))
+    }
+
+    "return DeleteIntegrationsFailure with error message when error is returned from backend" in new SetUp {
+  
+      httpCallToDeleteByPlatformWillFail(new InternalServerException("Internal Server Error"), "CORE_IF")
+      await(connector.deleteByPlatform(PlatformType.CORE_IF)) shouldBe DeleteIntegrationsFailure("Internal Server Error")
+    }
+    
+  }
+  
 }

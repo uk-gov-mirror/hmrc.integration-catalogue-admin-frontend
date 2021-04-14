@@ -23,18 +23,19 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
 import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 import uk.gov.hmrc.integrationcatalogue.models.{ErrorResponse, ErrorResponseMessage, IntegrationDetail}
-import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogueadminfrontend.models.{HeaderKeys, IntegrationDetailRequest}
 import uk.gov.hmrc.integrationcatalogueadminfrontend.services.IntegrationService
-import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidatePlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidateParameters
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.integrationcatalogueadminfrontend
 
 @Singleton
-class ValidateIntegrationIdAgainstPlatformTypeAction @Inject() (integrationService: IntegrationService)(implicit ec: ExecutionContext)
+class ValidateIntegrationIdAgainstParametersAction @Inject()(integrationService: IntegrationService)(implicit ec: ExecutionContext)
     extends ActionFilter[IntegrationDetailRequest]
     with HttpErrorFunctions
-    with ValidatePlatformType {
+    with ValidateParameters {
 
   override def executionContext: ExecutionContext = ec
 

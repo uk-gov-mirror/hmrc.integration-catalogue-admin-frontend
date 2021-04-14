@@ -18,7 +18,6 @@ package uk.gov.hmrc.integrationcatalogue.models
 
 import play.api.libs.json._
 import uk.gov.hmrc.integrationcatalogue.models.common._
-import uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders.IntegrationDetailRequest
 
 object JsonFormatters {
 
@@ -66,6 +65,8 @@ object JsonFormatters {
   implicit val errorResponseMessageFormat = Json.format[ErrorResponseMessage]
 
   implicit val errorResponseFormat = Json.format[ErrorResponse]
+
+  implicit val formatDeleteIntegrationsResponse : Format[DeleteIntegrationsResponse] = Json.format[DeleteIntegrationsResponse]
 
   implicit val formatIntegrationResponse: Format[IntegrationResponse] = Json.format[IntegrationResponse]
 

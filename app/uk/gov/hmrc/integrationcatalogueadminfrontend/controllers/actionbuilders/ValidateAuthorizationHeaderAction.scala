@@ -33,11 +33,11 @@ import java.util.Base64
 import java.nio.charset.StandardCharsets
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
-import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidatePlatformType
+import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidateParameters
 
 @Singleton
 class ValidateAuthorizationHeaderAction @Inject()
-(appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with ValidatePlatformType {
+(appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions with ValidateParameters {
 
   override def executionContext: ExecutionContext = ec
 

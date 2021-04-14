@@ -30,6 +30,7 @@ import scala.concurrent.Future
 import java.util.UUID
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import org.scalatest.BeforeAndAfterEach
+import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 
 class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ApiDetailTestData with AwaitTestSupport with BeforeAndAfterEach {
 
@@ -46,11 +47,19 @@ class IntegrationServiceSpec extends WordSpec with Matchers with GuiceOneAppPerS
 
   }
 
-  "deleteByPublisherReference" should {
+  "deleteByIntegrationId" should {
     "return true from connector when deletion successful" in new SetUp {
       when(mockIntegrationCatalogueConnector.deleteByIntegrationId(eqTo(exampleIntegrationId))(*)).thenReturn(Future.successful(true))
       val result: Boolean = await(objInTest.deleteByIntegrationId(exampleIntegrationId))
       result shouldBe true
+    }
+  }
+
+  "deleteByPlatform" should {
+    "return DeleteIntegrationsSuccess from connector when deletion successful" in new SetUp {
+      when(mockIntegrationCatalogueConnector.deleteByPlatform(eqTo(PlatformType.CORE_IF))(*)).thenReturn(Future.successful(DeleteIntegrationsSuccess(DeleteIntegrationsResponse(1))))
+      val result = await(objInTest.deleteByPlatform(PlatformType.CORE_IF))
+      result shouldBe DeleteIntegrationsSuccess(DeleteIntegrationsResponse(1))
     }
   }
 

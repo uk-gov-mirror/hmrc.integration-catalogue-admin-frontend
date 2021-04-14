@@ -25,6 +25,7 @@ import scala.concurrent.Future
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
+import uk.gov.hmrc.integrationcatalogue.models.DeleteApiResult
 
 
 @Singleton
@@ -32,6 +33,10 @@ class IntegrationService @Inject()(integrationCatalogueConnector: IntegrationCat
 
   def deleteByIntegrationId(integrationId: IntegrationId)(implicit hc: HeaderCarrier) : Future[Boolean] = {
     integrationCatalogueConnector.deleteByIntegrationId(integrationId)
+  }
+
+  def deleteByPlatform(platform: PlatformType)(implicit hc: HeaderCarrier) : Future[DeleteApiResult] = {
+    integrationCatalogueConnector.deleteByPlatform(platform)
   }
 
   def findWithFilters(searchTerm: List[String], platformFilter: List[PlatformType])

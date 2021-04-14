@@ -53,11 +53,12 @@ case class PublishResult(isSuccess: Boolean, publishDetails: Option[PublishDetai
 
 sealed trait DeleteApiResult
 
-case object NotFoundDeleteApiResult extends DeleteApiResult
-case object NoContentDeleteApiResult extends DeleteApiResult
+case class DeleteIntegrationsSuccess(deleteIntegrationsResponse: DeleteIntegrationsResponse) extends DeleteApiResult
+case class DeleteIntegrationsFailure(message: String) extends DeleteApiResult
 
 case class PublishResponse(id: IntegrationId, publisherReference: String, platformType: PlatformType)
 
 case class ErrorResponseMessage(message: String)
 case class ErrorResponse(errors: List[ErrorResponseMessage])
 
+case class DeleteIntegrationsResponse(numberOfIntegrationsDeleted: Int)

@@ -28,6 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import uk.gov.hmrc.integrationcatalogue.models.common.IntegrationId
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
+import uk.gov.hmrc.http.BadRequestException
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppConfig)
@@ -64,6 +65,16 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
           logger.error(e.getMessage)
           false
       }
+  }
+
+  def deleteByPlatform(platform: PlatformType)(implicit hc: HeaderCarrier): Future[DeleteApiResult] = {
+    http.DELETE[DeleteIntegrationsResponse](s"$externalServiceUri/integrations?platforms=${platform.toString}")
+    .map(x => DeleteIntegrationsSuccess(x))
+      .recover {
+        case NonFatal(e) =>
+          logger.error(e.getMessage)
+         DeleteIntegrationsFailure(e.getMessage())
+        }
   }
 
   private def buildQueryParams(searchTerm: List[String], platformFilter: List[PlatformType]): Seq[(String, String)] = {

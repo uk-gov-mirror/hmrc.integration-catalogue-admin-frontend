@@ -17,31 +17,25 @@
 package uk.gov.hmrc.integrationcatalogueadminfrontend.controllers.actionbuilders
 
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.Results._
-import play.api.mvc.{ActionFilter, Request, Result}
-import scala.concurrent.{ExecutionContext, Future}
-
-import play.api.Logging
 import _root_.uk.gov.hmrc.http.HttpErrorFunctions
-import uk.gov.hmrc.integrationcatalogue.models._
-import uk.gov.hmrc.integrationcatalogue.models.JsonFormatters._
-import play.api.libs.json.Json
+import play.api.mvc.{ActionFilter, Request, Result}
+import uk.gov.hmrc.integrationcatalogueadminfrontend.utils.ValidateParameters
+
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
 class ValidateQueryParamKeyAction @Inject()()(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions with Logging {
+  extends ActionFilter[Request] with HttpErrorFunctions with ValidateParameters {
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
-    val validKeys = List("platformFilter", "searchTerm")
+    val validKeys = List("platformFilter", "searchTerm", "platform")
     val queryParamKeys = request.queryString.keys
 
-    if (!queryParamKeys.forall(validKeys.contains(_))) {
-        logger.info("Invalid query parameter key provided. It is case sensitive")
-        Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage( "Invalid query parameter key provided. It is case sensitive")))))))
-    }
-    else Future.successful(None)
+    Future.successful(validateQueryParamKey(validKeys, queryParamKeys))
   }
+
+
 }
