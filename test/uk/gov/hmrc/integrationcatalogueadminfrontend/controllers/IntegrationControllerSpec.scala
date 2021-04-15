@@ -162,7 +162,7 @@ with MockitoSugar with StubBodyParserFactory with ApiDetailTestData with BeforeA
 
       val result = controller.deleteByPlatform(List.empty)(deleteRequest)
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe """{"errors":[{"message":"Platforms query parameter is either missing or multiple have been provided"}]}"""
+      contentAsString(result) shouldBe """{"errors":[{"message":"platforms query parameter is either invalid, missing or multiple have been provided"}]}"""
       
     }
 
@@ -175,7 +175,7 @@ with MockitoSugar with StubBodyParserFactory with ApiDetailTestData with BeforeA
 
       val result = controller.deleteByPlatform(List(PlatformType.API_PLATFORM, PlatformType.CORE_IF))(deleteRequest)
       status(result) shouldBe BAD_REQUEST
-      contentAsString(result) shouldBe """{"errors":[{"message":"Platforms query parameter is either missing or multiple have been provided"}]}"""
+      contentAsString(result) shouldBe """{"errors":[{"message":"platforms query parameter is either invalid, missing or multiple have been provided"}]}"""
       
     }
 

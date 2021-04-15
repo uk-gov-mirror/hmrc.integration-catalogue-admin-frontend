@@ -187,7 +187,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
         val response: Future[Result] = route(app, validApiPublishRequest.withHeaders(coreIfAuthHeader : _*)).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
 
       }
 
@@ -198,7 +198,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
         val response: Future[Result] = route(app, validApiPublishRequest.withHeaders(coreIfAuthHeader ++ List(HeaderKeys.platformKey -> "SOMEINVALIDPLATFORM"): _*)).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
 
       }
 
@@ -347,7 +347,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
       "respond with 400 and error message platform type header is missing" in new Setup{
         val response: Future[Result] = route(app, validFileTransferPublishRequest.withHeaders(coreIfAuthHeader : _*)).get
         status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
 
       }
 

@@ -270,7 +270,7 @@ class IntegrationControllerISpec extends ServerBaseISpec
         val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader : _*)).get
         status(response) mustBe BAD_REQUEST
 
-        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
       }
 
       "respond with 400 when auth header present but platform type header is invalid" in new Setup {
@@ -282,7 +282,7 @@ class IntegrationControllerISpec extends ServerBaseISpec
         val response: Future[Result] = route(app, requestWithNoAuthHeader.withHeaders(coreIfAuthHeader ++ List(HeaderKeys.platformKey -> "INVALID_PLATFORM"): _*)).get
         status(response) mustBe BAD_REQUEST
 
-        contentAsString(response) mustBe """{"errors":[{"message":"Platform header is missing or invalid"}]}"""
+        contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
       }
 
       "respond with 404 when auth header and key are CORE_IF and integrationId is not found" in new Setup {

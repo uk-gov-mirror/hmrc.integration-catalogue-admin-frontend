@@ -50,7 +50,7 @@ class ValidateAuthorizationHeaderAction @Inject()
     else
       validatePlatformType(platformTypeHeader) match {
         case Some(platformType) => validatePlatformAuthHeader(platformType, authHeader)
-        case None               => Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("Platform header is missing or invalid")))))))
+        case None               => Future.successful(Some(BadRequest(Json.toJson(ErrorResponse(List(ErrorResponseMessage("platform type header is missing or invalid")))))))
       }
 
   }
