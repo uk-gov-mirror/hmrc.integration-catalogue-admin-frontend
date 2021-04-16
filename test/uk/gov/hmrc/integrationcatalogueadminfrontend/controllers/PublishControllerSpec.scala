@@ -165,7 +165,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       contentAsString(result) shouldBe """{"errors":[{"message":"Unexpected response from /integration-catalogue: some error"}]}"""
     }
 
-    "return 200 when valid payload is sent but publish fails" in new Setup {
+    "return 400 when valid payload is sent but publish fails" in new Setup {
       val result: Future[Result] = callPublish(Some(PublishResult(isSuccess = false, None, List(PublishError(123, "some message")))), validHeaders, "selectedFile", "text.txt")
 
       result shouldBeResult BAD_REQUEST
@@ -187,7 +187,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("platform header is missing or invalid"))))
+      val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("platform type header is missing or invalid"))))
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -202,7 +202,7 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       status(result) shouldBe BAD_REQUEST
 
-      val jsErrorResponse = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("platform header is missing or invalid"))))
+      val jsErrorResponse = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("platform type header is missing or invalid"))))
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
@@ -231,30 +231,39 @@ class PublishControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       contentAsJson(result) shouldBe jsErrorResponse
     }
 
-    "return 400 when publisherRef not set in header" in new Setup {
-      val result: Future[Result] = callPublish(None, validHeaders.filterNot(_._1.equals(HeaderKeys.publisherRefKey)), "selectedFile", "text.txt")
+    "return 200 when publisherRef not set in header" in new Setup {
 
-      status(result) shouldBe BAD_REQUEST
+      val id = UUID.randomUUID()
+      val result: Future[Result] = callPublish(
+        Some(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(id), publisherReference, PlatformType.CORE_IF)), List.empty)),
+        validHeaders.filterNot(_._1.equals(HeaderKeys.publisherRefKey)),
+        "selectedFile",
+        "text.txt"
+      )
 
-      val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("publisher reference header is missing or invalid"))))
+      status(result) shouldBe OK
 
-      contentAsJson(result) shouldBe jsErrorResponse
+      contentAsString(result) shouldBe raw"""{"id":"$id","publisherReference":"123456","platformType":"CORE_IF"}"""
     }
 
-    "return 400 when publisherRef is invalid in header" in new Setup {
+    "return 200 when publisherRef is invalid in header" in new Setup {
       val invalidHeaders = Seq(
         HeaderKeys.platformKey -> "CORE_IF",
         HeaderKeys.specificationTypeKey -> "OAS_V3",
         HeaderKeys.publisherRefKey -> "",
         HeaderNames.AUTHORIZATION -> encodedAuthHeader
       )
-      val result: Future[Result] = callPublish(None, invalidHeaders, "selectedFile", "text.txt")
 
-      status(result) shouldBe BAD_REQUEST
+     val id = UUID.randomUUID()
+      val result: Future[Result] = callPublish(
+        Some(PublishResult(isSuccess = true, Some(PublishDetails(true, IntegrationId(id), publisherReference, PlatformType.CORE_IF)), List.empty)),
+        invalidHeaders,
+        "selectedFile",
+        "text.txt"
+      )
 
-      val jsErrorResponse: JsObject = Json.toJsObject(ErrorResponse(List(ErrorResponseMessage("publisher reference header is missing or invalid"))))
-
-      contentAsJson(result) shouldBe jsErrorResponse
+      status(result) shouldBe OK
+      contentAsString(result) shouldBe raw"""{"id":"$id","publisherReference":"123456","platformType":"CORE_IF"}"""
     }
 
     "return 401 when Authorization not set in header" in new Setup {

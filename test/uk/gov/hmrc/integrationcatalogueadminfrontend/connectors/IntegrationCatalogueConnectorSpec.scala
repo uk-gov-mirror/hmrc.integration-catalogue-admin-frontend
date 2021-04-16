@@ -103,12 +103,12 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
 
   "IntegrationCatalogueConnector send" should {
 
-      val request: ApiPublishRequest = ApiPublishRequest("publisherRef", PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
+      val request: ApiPublishRequest = ApiPublishRequest(Some("publisherRef"), PlatformType.CORE_IF, SpecificationType.OAS_V3, "{}")
 
     "return successful result" in new SetUp {
       httpCallToPublishWillSucceedWithResponse(
         PublishResult(isSuccess = true,
-          Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  request.publisherReference, request.platformType)), List.empty))
+          Some(PublishDetails(isUpdate = true, IntegrationId(UUID.randomUUID()),  request.publisherReference.getOrElse(""), request.platformType)), List.empty))
 
 
       val result: Either[Throwable, PublishResult] = await(connector.publishApis(request))

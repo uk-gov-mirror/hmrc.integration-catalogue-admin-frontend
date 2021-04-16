@@ -20,9 +20,9 @@ import play.api.mvc.{Request, WrappedRequest}
 import uk.gov.hmrc.integrationcatalogue.models.common.{PlatformType, SpecificationType}
 import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 
-case class ExtractedHeaders(publisherReference: String, platformType: PlatformType, specificationType: SpecificationType)
+case class ExtractedHeaders(publisherReference: Option[String], platformType: PlatformType, specificationType: SpecificationType)
 
-case class ValidatedApiPublishRequest[A](publisherReference: String, platformType: PlatformType, specificationType: SpecificationType, request: Request[A])
+case class ValidatedApiPublishRequest[A](publisherReference: Option[String], platformType: PlatformType, specificationType: SpecificationType, request: Request[A])
     extends WrappedRequest[A](request)
 
 case class IntegrationDetailRequest[A](integrationDetail: IntegrationDetail, request: Request[A]) extends WrappedRequest[A](request)

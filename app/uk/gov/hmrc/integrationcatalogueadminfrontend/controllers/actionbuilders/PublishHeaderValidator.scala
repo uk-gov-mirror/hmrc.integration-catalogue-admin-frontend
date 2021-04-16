@@ -37,7 +37,7 @@ class PublishHeaderValidator {
   }
 
   private def validatePlatformType[A](request: Request[A]): ValidationResult[PlatformType] = {
-    validateHeaderItem[PlatformType](HeaderKeys.platformKey, "platform header is missing or invalid",
+    validateHeaderItem[PlatformType](HeaderKeys.platformKey, "platform type header is missing or invalid",
       x => PlatformType.values.map(_.toString()).contains(x.toUpperCase),
       x => PlatformType.withNameInsensitive(x), request.headers)
   }
@@ -48,9 +48,8 @@ class PublishHeaderValidator {
       x => SpecificationType.withNameInsensitive(x), request.headers)
   }
 
-  private def validatePublisherReference[A](request: Request[A]): ValidationResult[String] = {
-    validateHeaderItem[String](HeaderKeys.publisherRefKey, "publisher reference header is missing or invalid",
-      x => x.nonEmpty, x => x, request.headers)
+  private def validatePublisherReference[A](request: Request[A]): ValidationResult[Option[String]] = {
+    request.headers.get(HeaderKeys.publisherRefKey).validNel
   }
 
   private def validateHeaderItem[A](headerKey: String,

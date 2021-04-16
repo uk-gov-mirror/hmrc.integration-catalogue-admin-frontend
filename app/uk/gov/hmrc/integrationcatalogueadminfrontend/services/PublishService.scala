@@ -29,7 +29,7 @@ import uk.gov.hmrc.integrationcatalogue.models.FileTransferPublishRequest
 @Singleton
 class PublishService @Inject()(integrationCatalogueConnector: IntegrationCatalogueConnector){
     
-    def publishApi(publisherRef: String, platformType: PlatformType, specType: SpecificationType, contents: String)
+    def publishApi(publisherRef: Option[String], platformType: PlatformType, specType: SpecificationType, contents: String)
     (implicit hc: HeaderCarrier): Future[Either[Throwable, PublishResult]]  ={
          integrationCatalogueConnector.publishApis(ApiPublishRequest(publisherRef, platformType, specType, contents))
     }

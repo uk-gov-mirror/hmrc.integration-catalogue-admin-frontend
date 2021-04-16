@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 
 case class IntegrationResponse(count: Int, results: List[IntegrationDetail])
 
-case class ApiPublishRequest(publisherReference: String, platformType: PlatformType, specificationType: SpecificationType, contents: String)
+case class ApiPublishRequest(publisherReference: Option[String], platformType: PlatformType, specificationType: SpecificationType, contents: String)
 
 // Integration Catalogule File Transfer Sepcification
 // Json look like this :point_down:

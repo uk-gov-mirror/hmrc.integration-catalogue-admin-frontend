@@ -244,7 +244,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
           val response: Future[Result] = route(app, request).get
           status(response) mustBe BAD_REQUEST
-          contentAsString(response) mustBe """{"errors":[{"message":"platform header is missing or invalid"}]}"""
+          contentAsString(response) mustBe """{"errors":[{"message":"platform type header is missing or invalid"}]}"""
 
        }
 
@@ -264,7 +264,7 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
 
       }
 
-      "respond with 400 when invalid publisher ref header" in new Setup {
+      "respond with 201 when invalid publisher ref header" in new Setup {
 
         val invalidHeaders: Headers = Headers(
           HeaderKeys.platformKey -> "CORE_IF",
@@ -273,9 +273,12 @@ class PublishControllerISpec extends ServerBaseISpec with BeforeAndAfterEach wit
           HeaderNames.AUTHORIZATION -> encodedMasterAuthKey)
          val request: FakeRequest[MultipartFormData[TemporaryFile]] = validApiPublishRequest.withHeaders(invalidHeaders)
 
+
+        val backendResponse: PublishResult = createBackendPublishResponse(isSuccess = true, isUpdate = false)
+        primeIntegrationCatalogueServicePutWithBody("/integration-catalogue/apis/publish", OK, Json.toJson(backendResponse).toString)
+
         val response: Future[Result] = route(app, request).get
-        status(response) mustBe BAD_REQUEST
-        contentAsString(response) mustBe """{"errors":[{"message":"publisher reference header is missing or invalid"}]}"""
+        status(response) mustBe CREATED
 
       }
 
