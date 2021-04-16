@@ -32,6 +32,7 @@ import uk.gov.hmrc.integrationcatalogue.models.IntegrationDetail
 import uk.gov.hmrc.integrationcatalogue.models.common.PlatformType
 import play.api.http.HeaderNames
 import uk.gov.hmrc.integrationcatalogueadminfrontend.models.HeaderKeys
+import uk.gov.hmrc.integrationcatalogue.models.DeleteIntegrationsResponse
 
 class IntegrationControllerISpec extends ServerBaseISpec
   with IntegrationCatalogueConnectorStub with ApiDetailTestData {
@@ -82,6 +83,11 @@ class IntegrationControllerISpec extends ServerBaseISpec
 
     def validDeleteIntegrationRequestWithNoHeaders(integrationId: String): FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$integrationId")
+    }
+
+    def validDeleteByPlatformRequest(queryParam: String): FakeRequest[AnyContentAsEmpty.type] = {
+      FakeRequest(Helpers.DELETE, s"/integration-catalogue-admin-frontend/services/integrations/$queryParam")
+        .withHeaders(masterKeyHeader : _*)
     }
 
     def invalidPathRequest(): FakeRequest[AnyContentAsEmpty.type] = {
@@ -309,6 +315,26 @@ class IntegrationControllerISpec extends ServerBaseISpec
         status(response) mustBe UNAUTHORIZED
 
         contentAsString(response) mustBe """{"errors":[{"message":"Authorisation failed - CORE_IF is not authorised to delete an integration on API_PLATFORM"}]}"""
+      }
+    }
+
+    "DELETE /services/integrations" should {
+      "return 400 when using invalid filter key" in new Setup {
+        val invalidFilterKey = "?invalidFilterKey=UNKNOWN"
+
+        val response: Future[Result] = route(app, validDeleteByPlatformRequest(invalidFilterKey)).get
+        status(response) mustBe 400
+        contentAsString(response) mustBe """{"errors":[{"message":"platforms query parameter is either invalid, missing or multiple have been provided"}]}"""
+      }
+
+      "return 204 when using valid filter key" in new Setup {
+        val validFilterKey = "?platformFilter=CMA"
+
+        primeIntegrationCatalogueServiceDeleteByPlatform(validFilterKey, OK, Json.toJson(DeleteIntegrationsResponse(1)).toString)
+
+        val response: Future[Result] = route(app, validDeleteByPlatformRequest(validFilterKey)).get
+        status(response) mustBe OK
+        contentAsString(response) mustBe "{\"numberOfIntegrationsDeleted\":1}"
       }
     }
   }

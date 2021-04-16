@@ -134,5 +134,17 @@ trait IntegrationCatalogueConnectorStub {
     )
   }
 
+  def primeIntegrationCatalogueServiceDeleteByPlatform(platformQueryParm: String, status : Int, responseBody: String) = {
+
+    stubFor(delete(urlEqualTo(findWithFiltersUrl(platformQueryParm)))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(responseBody)
+      )
+    )
+  }
+
 
 }

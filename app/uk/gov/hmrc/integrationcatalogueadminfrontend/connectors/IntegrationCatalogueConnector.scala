@@ -68,7 +68,7 @@ class IntegrationCatalogueConnector @Inject()(http: HttpClient, appConfig: AppCo
   }
 
   def deleteByPlatform(platform: PlatformType)(implicit hc: HeaderCarrier): Future[DeleteApiResult] = {
-    http.DELETE[DeleteIntegrationsResponse](s"$externalServiceUri/integrations?platforms=${platform.toString}")
+    http.DELETE[DeleteIntegrationsResponse](s"$externalServiceUri/integrations?platformFilter=${platform.toString}")
     .map(x => DeleteIntegrationsSuccess(x))
       .recover {
         case NonFatal(e) =>

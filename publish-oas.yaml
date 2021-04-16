@@ -12,7 +12,6 @@ info:
   title: Integration Catalogue Keeper API
   description:
     This API lets you create, update and delete APIs defined in 'get data for your service'.
-
 paths:
   /services/apis/publish:
     put:
@@ -130,6 +129,19 @@ paths:
         DRAFT
       tags:
         - Publishing
+      parameters:
+        - platformFilter:
+          in: query
+          required: false
+          name: platformFilter
+          schema:
+            $ref: "#/components/schemas/PlatformType"
+        - searchTerm:
+          in: query
+          required: false
+          name: searchTerm
+          schema:
+            type: string
       responses:
         "200":
           description: "Yeah"
@@ -140,6 +152,23 @@ paths:
                 items: 
                   type: object
                   $ref: '#/components/schemas/Api'
+    delete:
+      tags:
+        - Publishing
+      parameters:
+        - in: query
+          required: true
+          name: platformFilter
+          schema:
+            $ref: "#/components/schemas/PlatformType"
+      responses:
+        "200":
+          description: "Yeah"
+          content:
+            application/json:
+              schema: 
+                type: object
+                $ref: '#/components/schemas/Api'
   /services/integrations/{api-id}:
     get:
       description: 
@@ -176,7 +205,6 @@ paths:
       responses:
         "204": 
           description: The resource was deleted successfully
-
 components:
   # From: https://swagger.io/docs/specification/2-0/authentication/
   securitySchemes:
@@ -271,4 +299,3 @@ components:
       type: string
       format: uuid
       example: 2e9772e9-3c6a-4f1b-a9a3-0b205cbca4fb
-

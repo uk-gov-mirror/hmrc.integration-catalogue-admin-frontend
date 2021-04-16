@@ -60,7 +60,7 @@ class IntegrationCatalogueConnectorSpec extends WordSpec with Matchers with Opti
     val outboundUrl = "/integration-catalogue/apis/publish"
     val findWithFilterlUrl = s"/integration-catalogue/integrations"
     def deleteIntegrationsUrl(id: IntegrationId) = s"/integration-catalogue/integrations/${id.value}"
-    def deleteIntegrationsByPlatformUrl(platform: String) = s"/integration-catalogue/integrations?platforms=$platform"
+    def deleteIntegrationsByPlatformUrl(platform: String) = s"/integration-catalogue/integrations?platformFilter=$platform"
 
     def httpCallToPublishWillSucceedWithResponse(response: PublishResult): ScalaOngoingStubbing[Future[PublishResult]] =
       when(mockHttpClient.PUT[ApiPublishRequest, PublishResult]
